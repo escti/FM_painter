@@ -1,10 +1,19 @@
 # AGENTS.md — FM_Painter
 
 CPU/OpenCL image→shapes generator whose JSONs are imported into Forza games.
-Read `ESTADO.md` (current state + pending decisions), `melhorias.md` (backlog)
-and `bugs.md` (open B1–B6) before planning work.
 Run sessions with cwd at the repo root — project skills (`.opencode/skills/`)
 only resolve when the working directory is inside this worktree.
+
+## Routing (lazy-load — do NOT read everything upfront)
+
+- Generating, comparing, or importing vinyls? Load the matching skill first:
+  `vinyl-deliverable-check`, `vinyl-quality-compare`, `forza-json-contracts`,
+  `fm8-import-debug` (via the `skill` tool).
+- Planning, resuming work, or deciding a track? Then read `ESTADO.md`
+  (state + pending decisions) plus `melhorias.md`/`bugs.md` as needed.
+- Trivial tasks (run tests, small fix)? This file alone is enough.
+- End of significant work: update `ESTADO.md` (date, results, decisions),
+  then commit.
 
 ## Boundaries (do not cross)
 
