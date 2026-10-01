@@ -5,12 +5,12 @@ license: MIT
 compatibility: opencode
 metadata:
   area: evaluation
-  project: ForzaPainter2
+  project: FM_Painter
 ---
 
 # Vinyl Quality Compare
 
-Use ao comparar qualidade entre geradores (app original × ForzaPainter2 × KFPS).
+Use ao comparar qualidade entre geradores (app original × FM_Painter × KFPS).
 Comparação justa exige **mesmo rasterizador e mesma métrica** — nunca comparar os
 campos `score` gravados nos JSONs (cada ferramenta usa uma escala: ~0.41 no app
 antigo, ~0.087 no KFPS, RMSE normalizado no v2).

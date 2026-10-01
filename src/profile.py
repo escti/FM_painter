@@ -3,7 +3,7 @@ import configparser
 
 
 DEFAULTS = {
-    "description": "ForzaPainter2",
+    "description": "FM_Painter",
     "maxPreviewSize": 500,
     "maxResolution": 1024,
     "maxThreads": 0,

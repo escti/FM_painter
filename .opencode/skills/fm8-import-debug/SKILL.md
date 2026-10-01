@@ -5,7 +5,7 @@ license: MIT
 compatibility: opencode
 metadata:
   area: fm8-import
-  project: ForzaPainter2
+  project: FM_Painter
 ---
 
 # FM8 Import Debug

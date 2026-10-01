@@ -1,15 +1,15 @@
-# AGENTS.md — ForzaPainter2
+# AGENTS.md — FM_Painter
 
 CPU/OpenCL image→shapes generator whose JSONs are imported into Forza games.
 Read `melhorias.md` (backlog) and `bugs.md` (open B1–B6) before planning work.
 
 ## Boundaries (do not cross)
 
-- All code lives in `ForzaPainter2/`. Never write outside it.
+- All code lives in `FM_Painter/`. Never write outside it.
 - `../imagens_originais/`, `forza-painter.exe`, KFPS installs are
   **reference inputs — read-only**. Never modify, move, or "fix" them.
 
-## Commands (always run from `ForzaPainter2/`)
+## Commands (always run from `FM_Painter/`)
 
 - Tests: `python -m unittest discover -s tests -v`
 - Generate: `python tools/gen.py "<abs-image>" --profile profiles/bg_off_fast_beautiful.ini --stop-at 500`

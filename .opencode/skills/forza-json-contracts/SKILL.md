@@ -5,7 +5,7 @@ license: MIT
 compatibility: opencode
 metadata:
   area: json-compat
-  project: ForzaPainter2
+  project: FM_Painter
 ---
 
 # Forza JSON Contracts

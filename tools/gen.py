@@ -15,7 +15,7 @@ from src.version import __version__
 
 
 def main():
-    ap = argparse.ArgumentParser(description="ForzaPainter2 - rapido e bonito (bg_off)")
+    ap = argparse.ArgumentParser(description="FM_Painter - rapido e bonito (bg_off)")
     ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     ap.add_argument("image")
     ap.add_argument("--profile", default="profiles/bg_off_fast_beautiful.ini")

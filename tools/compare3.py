@@ -1,4 +1,4 @@
-"""Comparativo a 3: app original vs ForzaPainter2 vs KFPS. Mesma metrica p/ todos.
+"""Comparativo a 3: app original vs FM_Painter vs KFPS. Mesma metrica p/ todos.
 
 Uso: python tools/compare3.py --n 500|1000|3000
 Saida: output/comparacao3_<n>/{antigo,v2,kfps}_<n>.png, lado_a_lado.png, metricas.txt

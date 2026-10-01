@@ -1,4 +1,4 @@
-# ForzaPainter2
+# FM_Painter
 
 Gerador de vinis para Forza (FH5/FM8): converte imagens com fundo removido
 (`*_bg_off.png`) em formas geométricas importáveis no jogo. CPU (numba) hoje,
@@ -21,7 +21,7 @@ pip install -r requirements.txt
 python -m unittest discover -s tests -v
 ```
 
-Todos os comandos abaixo partem da raiz `ForzaPainter2/`.
+Todos os comandos abaixo partem da raiz `FM_Painter/`.
 
 ## Uso
 

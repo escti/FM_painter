@@ -1,4 +1,4 @@
-# Bugs — ForzaPainter2
+# Bugs — FM_Painter
 
 > Última atualização: 2026-09-28. Só bugs **abertos** têm correção pendente;
 > os já corrigidos ficam em registro para não reabrir. Correções planejadas

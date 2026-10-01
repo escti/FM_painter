@@ -1,4 +1,4 @@
-"""Renderiza o JSON 1000 do app original + metricas justas vs ForzaPainter2.
+"""Renderiza o JSON 1000 do app original + metricas justas vs FM_Painter.
 
 So LE o JSON antigo (nunca escreve la). Tudo novo vai para output/comparacao/.
 Mesmo rasterizador numba pros dois lados (apples-to-apples).

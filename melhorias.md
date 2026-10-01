@@ -1,8 +1,8 @@
-# Melhorias — ForzaPainter2
+# Melhorias — FM_Painter
 
 > Última atualização: 2026-09-28. Itens aprovados/não implementados, ideias
 > registradas e referências para `bugs.md`. Nada aqui altera o fluxo antigo
-> (`output/` existente); tudo novo entra em `ForzaPainter2/`.
+> (`output/` existente); tudo novo entra em `FM_Painter/`.
 
 ## Aprovadas, não implementadas
 

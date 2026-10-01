@@ -5,7 +5,7 @@ license: MIT
 compatibility: opencode
 metadata:
   area: release
-  project: ForzaPainter2
+  project: FM_Painter
 ---
 
 # Vinyl Deliverable Check
