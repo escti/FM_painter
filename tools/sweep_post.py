@@ -50,6 +50,8 @@ def main():
     ap.add_argument("--passes", default="0,1,2,3")
     ap.add_argument("--post-mutations", type=int, default=100)
     ap.add_argument("--tol", type=float, default=0.0002)
+    ap.add_argument("--spill-w", type=float, default=0.0,
+                    help="penalidade de spill G1/9a (fatiado: 1 valor por run)")
     a = ap.parse_args()
 
     passes_list = [int(x) for x in a.passes.split(",") if x.strip().isdigit()]
@@ -65,8 +67,9 @@ def main():
     print(f"[sweep] work={W}x{H} crop={stats['crop']} "
           f"transp={stats['pct_transparente']:.1f}%")
 
-    # erro base (passes=0) sem pos
-    os.makedirs(OUTDIR, exist_ok=True)
+    # saida separada por w (fatiado: 1 valor por run; nao mistura baselines)
+    outdir = OUTDIR if a.spill_w == 0.0 else f"{OUTDIR}_w{a.spill_w:g}"
+    os.makedirs(outdir, exist_ok=True)
     results = []
     for p in passes_list:
         shapes = list(base_shapes)
@@ -74,22 +77,25 @@ def main():
         if p > 0:
             shapes = post_process(shapes, target, mask, bg, passes=p,
                                   post_mutations=a.post_mutations,
-                                  tol=a.tol, opaque_only=True)
+                                  tol=a.tol, opaque_only=True,
+                                  spill_w=a.spill_w)
         assert len(shapes) == n0, "pos nunca pode mudar a contagem"
         cur = render_all(shapes, W, H, mask, bg)
         err = float(full_error_nb(target, cur, mask, W, H))
         dt = time.time() - t0
         results.append((p, err, dt))
-        print(f"[sweep] passes={p} err={err:.5f} t={dt:.0f}s (N={len(shapes)})")
+        print(f"[sweep] passes={p} spill_w={a.spill_w:g} err={err:.5f} "
+              f"t={dt:.0f}s (N={len(shapes)})")
         # salva refinado em dir separada (nao sobrescreve checkpoints -> B3)
         scores = [err] * len(shapes)
-        dump_json(OUTDIR, "efr_logo2_bg_off", W, H, shapes, scores,
+        dump_json(outdir, "efr_logo2_bg_off", W, H, shapes, scores,
                   suffix=f".sweep{p}")
 
-    with open(os.path.join(OUTDIR, "metricas.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(outdir, "metricas.txt"), "w", encoding="utf-8") as f:
         for p, err, dt in results:
-            f.write(f"passes={p} RMSE={err:.5f} t={dt:.0f}s N={n0}\n")
-    print(f"[ok] metricas em {OUTDIR}/metricas.txt")
+            f.write(f"passes={p} spill_w={a.spill_w:g} RMSE={err:.5f} "
+                    f"t={dt:.0f}s N={n0}\n")
+    print(f"[ok] metricas em {outdir}/metricas.txt")
 
 
 if __name__ == "__main__":

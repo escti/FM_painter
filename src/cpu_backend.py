@@ -11,7 +11,8 @@ import numba
 
 
 @numba.njit(nogil=True, fastmath=True)
-def _score_one(target, current, mask, W, H, cx, cy, rx, ry, angle_deg, alpha):
+def _score_one(target, current, mask, W, H, cx, cy, rx, ry, angle_deg, alpha,
+               spill_w):
     if rx < 1.0:
         rx = 1.0
     if ry < 1.0:
@@ -51,16 +52,18 @@ def _score_one(target, current, mask, W, H, cx, cy, rx, ry, angle_deg, alpha):
     sum_g = 0.0
     sum_b = 0.0
     cnt = 0
+    spill = 0
     err_before = 0.0
     for y in range(y0, y1 + 1):
         dy = float(y) - cy
         for x in range(x0, x1 + 1):
-            if not mask[y, x]:
-                continue
             dx = float(x) - cx
             lx = dx * ca + dy * sa
             ly = -dx * sa + dy * ca
             if lx * lx * inv_rx2 + ly * ly * inv_ry2 > 1.0:
+                continue
+            if not mask[y, x]:
+                spill += 1  # G1/9a: tinta sobre transparente (jogo nao tem mascara)
                 continue
             cnt += 1
             tr = float(target[y, x, 0])
@@ -123,14 +126,14 @@ def _score_one(target, current, mask, W, H, cx, cy, rx, ry, angle_deg, alpha):
             db = tb - nab
             err_after += dr * dr + dg * dg + db * db
 
-    return err_after - err_before, br, bg, bb, cnt
+    return err_after - err_before + spill_w * spill, br, bg, bb, cnt
 
 
 # Compat: versao opaca antiga (alpha=255) para testes
 @numba.njit(nogil=True, fastmath=True)
 def score_candidate_nb(target, current, mask, W, H, cx, cy, rx, ry, angle_deg):
     d, r, g, b, c = _score_one(target, current, mask, W, H,
-                               cx, cy, rx, ry, angle_deg, 255.0)
+                               cx, cy, rx, ry, angle_deg, 255.0, 0.0)
     return d, int(r), int(g), int(b), c
 
 
@@ -209,14 +212,16 @@ def full_error_nb(target, current, mask, W, H):
 
 @numba.njit(parallel=True, nogil=True, fastmath=True)
 def score_batch_parallel_nb(target, current, mask, cands,
-                            out_delta, out_r, out_g, out_b, out_cnt, W, H):
+                            out_delta, out_r, out_g, out_b, out_cnt, W, H,
+                            spill_w):
     """Um dispatch paralelo: 1 iteracao por candidato (prange libera todos os cores)."""
     n = cands.shape[0]
     for i in numba.prange(n):
         d, r, g, b, c = _score_one(
             target, current, mask, W, H,
             float(cands[i, 0]), float(cands[i, 1]), float(cands[i, 2]),
-            float(cands[i, 3]), float(cands[i, 4]), float(cands[i, 5]))
+            float(cands[i, 3]), float(cands[i, 4]), float(cands[i, 5]),
+            spill_w)
         out_delta[i] = d
         out_r[i] = r
         out_g[i] = g
@@ -224,7 +229,7 @@ def score_batch_parallel_nb(target, current, mask, cands,
         out_cnt[i] = c
 
 
-def score_batch(target, current, mask, candidates):
+def score_batch(target, current, mask, candidates, spill_w=0.0):
     """Fallback serial (candidatos 5-col opacos ou 6-col com alpha)."""
     H, W = mask.shape
     out = []
@@ -233,18 +238,20 @@ def score_batch(target, current, mask, candidates):
             d, r, g, b, cnt = _score_one(
                 target, current, mask, W, H,
                 float(c[0]), float(c[1]), float(c[2]),
-                float(c[3]), float(c[4]), float(c[5]))
+                float(c[3]), float(c[4]), float(c[5]),
+                float(spill_w))
         else:
             d, r, g, b, cnt = _score_one(
                 target, current, mask, W, H,
                 float(c[0]), float(c[1]), float(c[2]),
-                float(c[3]), float(c[4]), 255.0)
+                float(c[3]), float(c[4]), 255.0,
+                float(spill_w))
         out.append((d, float(r), float(g), float(b),
                     float(c[5]) if len(c) >= 6 else 255.0, cnt))
     return out
 
 
-def score_parallel(target, current, mask, cands):
+def score_parallel(target, current, mask, cands, spill_w=0.0):
     """Sempre via prange (sem ThreadPool/GIL). Retorna lista de tuplas."""
     import numpy as np
     n = len(cands)
@@ -261,6 +268,6 @@ def score_parallel(target, current, mask, cands):
     out_c = np.empty(n, dtype=np.int64)
     H, W = mask.shape
     score_batch_parallel_nb(target, current, mask, c, out_d, out_r, out_g,
-                            out_b, out_c, W, H)
+                            out_b, out_c, W, H, float(spill_w))
     return [(float(out_d[i]), float(out_r[i]), float(out_g[i]),
              float(out_b[i]), float(c[i, 5]), int(out_c[i])) for i in range(n)]

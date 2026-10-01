@@ -41,6 +41,27 @@ Ferramentas novas: `tools/sweep_post.py`, `tools/autopsy.py`
   no 3000 ≈ 36× o custo — especificação da poda por importância estilo-KFPS
   fica para depois do G1 (usa ganho marginal da autopsia).
 
+## G1 executado (2026-10-01, itens 8+9)
+
+Ferramentas novas: `tools/normalize_for_old_exe.py` (+`--check` exe|kfps),
+`tools/simpreview.py` (preview sem máscara, backdrop cinza 160 = só fundo,
+nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
+`score_parallel`, `fitInsideBbox` (default off) em candidates,
+`fullCanvas` opt-in em `dump_json`/`gen.py` (+flags CLI `--spill-penalty`,
+`--fit-inside`, `--full-canvas`). Testes 14/14 OK.
+`--check exe --expect 500` passa no nosso 500; simpreview quantificou o B1:
+163.724 px de spill (72,3% da área transparente).
+
+- Calibração fatiada (pós, mesma base 500): w=30/300/3000 → RMSE
+  0.14118/0.14119/0.14125 vs 0.14118 baseline; spill 163721/163832/163117.
+  Pós quase não move o spill (aceite é global-mascarado; gigantes nascem na geração).
+- Prova de geração (`--stop-at 100 --spill-penalty 3000`, 41s, sem pós):
+  spill 68,1%→**17,9%** (154063→40443 px) por +0,00014 RMSE
+  (0,20799→0,20813); maior gigante 353k→152k px.
+- Recomendado: `spillPenalty=3000` p/ runs com spill; default segue 0.0 até
+  validação full-500. `fit-inside` com mecanismo+teste, sem validação em geração.
+  Full-canvas opt-in, sem import de validação ainda.
+
 ## Provado in-game (FM8)
 
 - KFPS-500 (gerado por ele): **OK**.
@@ -51,9 +72,10 @@ Ferramentas novas: `tools/sweep_post.py`, `tools/autopsy.py`
 
 ## Decisões pendentes (dono: usuário)
 
-1. **Fix do spill** (`melhorias.md#9`: penalidade + export full-canvas +
-   simpreview) — falta aprovar + informar a cor da pintura do carro.
-2. **Normalizador KFPS→`.exe`** (`melhorias.md#8`) — aprovar ou não.
+1. ~~**Fix do spill**~~ feito no G1 (penalidade + `fit-inside` + full-canvas opt-in
+   + simpreview). Backdrop cinza é só fundo, nunca shape. Falta: import de
+   validação no jogo (full-canvas + ausência de lajes).
+2. ~~**Normalizador KFPS→`.exe`**~~ feito no G1 (`--check` cobre exe|kfps).
 3. **Trilha**: (A) adotar KFPS / (B) continuar CPU / (C) híbrida.
 4. **Go do backend GPU** + teto de tempo (antes: 1h por bateria).
 5. **Resolução 1536** — estacionada (exige 1 import de validação).

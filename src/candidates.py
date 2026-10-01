@@ -50,7 +50,7 @@ def radius_for_progress(progress, W, H, min_r=2):
 
 def random_candidates(n, W, H, mask, min_r=2, max_r_div=4, rng=None,
                       target=None, current=None, progress=0.5, guided=0.7,
-                      opaque_only=True):
+                      opaque_only=True, fit_inside=False):
     rng = rng or np.random.default_rng()
     x0, y0, x1, y1 = opaque_bbox(mask)
     lo, hi = radius_for_progress(progress, W, H, min_r)
@@ -88,18 +88,32 @@ def random_candidates(n, W, H, mask, min_r=2, max_r_div=4, rng=None,
         rx = float(np.exp(rng.uniform(log_min, log_max)))
         ry = float(np.exp(rng.uniform(log_min, log_max)))
         ang = float(rng.uniform(0, 360))
+        if fit_inside:
+            # G1/9b: trava conservadora — extensao (com rotacao) dentro da bbox opaca
+            import math as _m
+            ca, sa = abs(_m.cos(_m.radians(ang))), abs(_m.sin(_m.radians(ang)))
+            ex = rx * ca + ry * sa
+            ey = rx * sa + ry * ca
+            lim = min(cx - x0, x1 - cx, cy - y0, y1 - cy)
+            if lim < 1.0:
+                continue
+            over = max(ex, ey) / max(1.0, lim)
+            if over > 1.0:
+                rx, ry = rx / over, ry / over
         out[made] = (cx, cy, rx, ry, ang, float(alphas[made]))
         made += 1
     return out[:made]
 
 
 def mutate_candidates(base, n, W, H, mask, rng=None, scale=0.15,
-                      opaque_only=True):
+                      opaque_only=True, fit_inside=False):
     """Muta 1 dos 6 params (alpha fixo em 255 se opaque_only)."""
     rng = rng or np.random.default_rng()
     cx, cy, rx, ry, ang, alp = [float(x) for x in base]
     if opaque_only:
         alp = 255.0
+    ys, xs = np.where(mask)
+    bx0, by0, bx1, by1 = xs.min(), ys.min(), xs.max(), ys.max()
     span = max(rx, ry, 8.0)
     out = np.zeros((n, 6), dtype=np.float32)
     for i in range(n):
@@ -119,5 +133,13 @@ def mutate_candidates(base, n, W, H, mask, rng=None, scale=0.15,
             nalp = float(np.clip(alp + rng.normal(0, 40), 16, 255))
         ncx = min(max(ncx, 0), W - 1)
         ncy = min(max(ncy, 0), H - 1)
+        if fit_inside:
+            import math as _m
+            ca, sa = abs(_m.cos(_m.radians(nang))), abs(_m.sin(_m.radians(nang)))
+            lim = min(ncx - bx0, bx1 - ncx, ncy - by0, by1 - ncy)
+            if lim >= 1.0:
+                over = max(nrx * ca + nry * sa, nrx * sa + nry * ca) / lim
+                if over > 1.0:
+                    nrx, nry = nrx / over, nry / over
         out[i] = (ncx, ncy, nrx, nry, nang, nalp)
     return out

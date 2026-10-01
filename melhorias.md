@@ -25,14 +25,18 @@
    no acerto, 50% das vezes passo aleatório (Exp D, anti-mínimo-local).
 6. **Sweep de pós 0/1/2/3** sobre resultado 500 já salvo (só pós, sem
    regenerar; barato; espera-se platô em ~2).
+   Feito no G4 (`tools/sweep_post.py`): 0→0.14544, 1→0.14118, 2→0.13963,
+   3→0.13864 — sem platô em 2.
 7. **Autopsia JSON** (`tools/autopsy.py`, só leitura): distribuição de
    área/aspecto/ângulo, ganho marginal por shape (curva erro × índice),
    densidade espacial shapes-vs-erro, paleta usada — calibra o sampler e
    mostra onde o budget vaza. Vale para JSONs antigos e novos.
+   Feita no G4 (escopo: só nosso 500).
 8. **Normalizador KFPS→`.exe` antigo + validador `--check`**
    (`tools/normalize_for_old_exe.py`): injeta `type:1` se ausente,
    arredonda `data`/`color` para int, valida contagem. O `.exe` antigo
    rejeita finals do KFPS ("Malformed": sem fundo + floats) — ver B4.
+   Feito no G1 (+`--check --dest exe|kfps --expect N`).
 9. **Correção do spill in-game** (ver B1/B2):
    - penalidade de derramamento no scoring (custo por pixel transparente
      coberto; espelho do `boundary_penalty` do KFPS);
@@ -40,6 +44,9 @@
    - export em coordenadas cheias 1024×1024 (somar offset do crop);
    - **simpreview sem máscara obrigatório** em todo entregável (fundo
      cinza-automotivo) — teria pego o B1 antes do jogo.
+   Feito no G1 (`tools/simpreview.py`, `spillPenalty` default 0.0,
+   `fitInsideBbox`/`fullCanvas` opt-in; w=3000 corta o spill 68%→18% por
+   +0,00014 RMSE no 100; backdrop cinza nunca é shape).
 
 ## Ideias registradas, não decididas
 

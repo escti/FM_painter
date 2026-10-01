@@ -36,6 +36,8 @@ def generate(target, current, mask, profile, out_dir, base_name,
     stop_at = profile["stopAt"]
     save_at = set(profile["saveAt"])
     opaque_only = bool(profile.get("opaqueOnly", 1))
+    spill_w = float(profile.get("spillPenalty", 0.0))
+    fit_inside = bool(profile.get("fitInsideBbox", 0))
 
     t0 = time.time()
     err = float(full_error_nb(target, current, mask, W, H))
@@ -51,16 +53,16 @@ def generate(target, current, mask, profile, out_dir, base_name,
             min_r=profile["minShapeRadius"],
             max_r_div=profile["maxShapeRadiusDiv"], rng=rng,
             target=target, current=current, progress=progress,
-            opaque_only=opaque_only)
-        res = score_parallel(target, current, mask, cands)
+            opaque_only=opaque_only, fit_inside=fit_inside)
+        res = score_parallel(target, current, mask, cands, spill_w=spill_w)
         bi = int(np.argmin([r[0] for r in res]))
         best_d, br, bg, bb, ba, cnt = res[bi]
         best = cands[bi].copy()
 
         for _ in range(profile["mutationRounds"]):
             muts = mutate_candidates(best, profile["mutatedSamples"], W, H, mask, rng=rng,
-                                     opaque_only=opaque_only)
-            mres = score_parallel(target, current, mask, muts)
+                                     opaque_only=opaque_only, fit_inside=fit_inside)
+            mres = score_parallel(target, current, mask, muts, spill_w=spill_w)
             mi = int(np.argmin([r[0] for r in mres]))
             if mres[mi][0] < best_d:
                 best_d, br, bg, bb, ba, cnt = mres[mi]
@@ -94,7 +96,10 @@ def generate(target, current, mask, profile, out_dir, base_name,
     return shapes, scores
 
 
-def dump_json(out_dir, base_name, W, H, shapes, scores, suffix=""):
+def dump_json(out_dir, base_name, W, H, shapes, scores, suffix="",
+              offset=(0, 0)):
+    """offset=(x0,y0): soma no cx,cy p/ export full-canvas (G1/9c, opt-in)."""
+    ox, oy = offset
     data = {"shapes": [{"type": 1, "data": [0, 0, W, H],
                         "color": [255, 0, 255, 0], "score": 0}]}
     for i, s in enumerate(shapes):
@@ -105,7 +110,7 @@ def dump_json(out_dir, base_name, W, H, shapes, scores, suffix=""):
             cx, cy, rx, ry, ang, r, g, b, a = s
         data["shapes"].append({
             "type": 16,
-            "data": [int(round(cx)), int(round(cy)),
+            "data": [int(round(cx + ox)), int(round(cy + oy)),
                      int(round(rx)), int(round(ry)), int(round(ang) % 360)],
             "color": [int(r), int(g), int(b), int(a)],
             "score": float(scores[i]) if i < len(scores) else 0.0,

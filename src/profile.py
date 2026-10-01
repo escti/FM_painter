@@ -23,6 +23,9 @@ DEFAULTS = {
     "postPasses": 1,
     "postMutations": 100,
     "redundantTol": 0.0002,
+    "spillPenalty": 0.0,
+    "fitInsideBbox": 0,
+    "fullCanvas": 0,
 }
 
 INT_KEYS = {
@@ -30,10 +33,10 @@ INT_KEYS = {
     "posterizeLevels", "previewEvery", "randomSamples", "saveEvery",
     "stopAt", "redundantCheckEvery", "opaqueOnly", "alphaThreshold",
     "maxShapeRadiusDiv", "minShapeRadius", "mutationRounds",
-    "postPasses", "postMutations",
+    "postPasses", "postMutations", "fitInsideBbox", "fullCanvas",
 }
 
-FLOAT_KEYS = {"redundantTol"}
+FLOAT_KEYS = {"redundantTol", "spillPenalty"}
 
 
 def load_profile(path):

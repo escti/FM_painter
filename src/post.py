@@ -56,7 +56,7 @@ def prune_diagnostic(shapes, target, mask, bg, tol=0.0002, max_drift=0.005,
 
 
 def refine_pass(shapes, target, mask, bg, post_mutations=100, log=print, tag="",
-                opaque_only=True, top_k=3):
+                opaque_only=True, top_k=3, spill_w=0.0):
     """Coordinate-descent in-place com aceite GLOBAL (N preservado).
 
     Fix: a versao anterior aceitava pelo delta local (canvas sem o shape),
@@ -80,7 +80,7 @@ def refine_pass(shapes, target, mask, bg, post_mutations=100, log=print, tag="",
         without = render_all(trial_shapes, W, H, mask, bg)
         muts = mutate_candidates(base_cand[0], post_mutations, W, H, mask,
                                  rng=rng, opaque_only=opaque_only)
-        res = score_parallel(target, without, mask, muts)
+        res = score_parallel(target, without, mask, muts, spill_w=spill_w)
         order = np.argsort([x[0] for x in res])[:top_k]
         for mi in order:
             mi = int(mi)
@@ -108,7 +108,8 @@ def refine_pass(shapes, target, mask, bg, post_mutations=100, log=print, tag="",
 
 
 def post_process(shapes, target, mask, bg, passes=1, post_mutations=100,
-                 tol=0.0002, max_drift=0.005, opaque_only=True, log=print):
+                 tol=0.0002, max_drift=0.005, opaque_only=True, log=print,
+                 spill_w=0.0):
     """passes=0 nada; >=1 diagnostico + (passes) refines. Nunca muda N."""
     if passes <= 0 or not shapes:
         return shapes
@@ -119,7 +120,7 @@ def post_process(shapes, target, mask, bg, passes=1, post_mutations=100,
         shapes, _ = refine_pass(shapes, target, mask, bg,
                                 post_mutations=post_mutations, log=log,
                                 tag=f" p{p + 1}/{passes}",
-                                opaque_only=opaque_only)
+                                opaque_only=opaque_only, spill_w=spill_w)
     _, _ = prune_diagnostic(shapes, target, mask, bg, tol=tol,
                             max_drift=max_drift, log=log)
     assert len(shapes) == n0, "pos nunca pode mudar a contagem"
