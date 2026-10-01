@@ -1,6 +1,6 @@
 # Melhorias — FM_Painter
 
-> Última atualização: 2026-09-28. Itens aprovados/não implementados, ideias
+> Última atualização: 2026-10-01. Itens aprovados/não implementados, ideias
 > registradas e referências para `bugs.md`. Nada aqui altera o fluxo antigo
 > (`output/` existente); tudo novo entra em `FM_Painter/`.
 
@@ -61,3 +61,24 @@
 - B2 export recortado → correção neste arquivo, item 9.
 - B3 scores dos checkpoints sobrescritos (cosmético).
 - B4 rejeição do JSON KFPS pelo `.exe` antigo → correção item 8.
+
+## Plano agrupado (2026-10-01, ordem de execução)
+
+> Decidido com o dono em 2026-10-01. Não muda os itens acima, só agrupa
+> por correlação (mesmos arquivos/risco) e fixa a ordem para não esquecer.
+
+- **G1 — Entregável jogável**: 8 + 9 (contrato game-facing, B1/B2/B4).
+  Juntos economizam idas ao Forza; sem isso todo resto gera preview
+  bonito e laje de tinta in-game.
+- **G2 — Motor de candidatos**: 2 + 3 + 5 + 11 + 12 (um único sampler
+  parametrizado em `src/candidates.py`; fazer separado gera conflito).
+- **G3 — Função objetivo**: 4 + penalidade-spill do 9 (soma ponderada única
+  em `score_batch`; senão há dupla-contagem).
+- **G4 — Diagnóstico barato → alimenta 14**: 6 + 7 + 13 (só leitura/pós,
+  sem regenerar). Base fixada: `output/efr_logo2_bg_off_v4_3000/`
+  `efr_logo2_bg_off.500.json`. Autopsia escopo inicial: só o nosso JSON.
+- **G5 — Escala**: 1 + 10 + 14 (GPU OpenCL + 1536 + trilha A/B/C; GPU é o
+  acelerador do G2, 1536 muda coordenada de export).
+
+**Ordem: G4 → G1 → G3 → G2 → G5.** G4 e G1 destravam tudo com custo baixo;
+G3 antes do G2 porque muda o scoring que o sampler otimiza.
