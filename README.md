@@ -27,7 +27,7 @@ Todos os comandos abaixo partem da raiz `ForzaPainter2/`.
 
 ```
 # Gerar (perfil atual: profiles/bg_off_fast_beautiful.ini)
-python tools/gen.py "D:/caminho/para/logo_bg_off.png" --profile profiles/bg_off_fast_beautiful.ini --stop-at 500
+python tools/gen.py "../minha_logo_bg_off.png" --profile profiles/bg_off_fast_beautiful.ini --stop-at 500
 # Saída: output/<nome>/<nome>.json (+ .500/.1000 checkpoints) e previews só nos checkpoints
 
 # Pós-processamento configurável: --post-passes 0 (nada) | 1 (refino, default) | 2+
