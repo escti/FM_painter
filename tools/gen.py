@@ -11,17 +11,19 @@ from src.generator import generate, dump_json
 from src.render import save_preview
 from src.post import post_process
 from src.cpu_backend import full_error_nb
+from src.version import __version__
 
 
 def main():
     ap = argparse.ArgumentParser(description="ForzaPainter2 - rapido e bonito (bg_off)")
+    ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     ap.add_argument("image")
     ap.add_argument("--profile", default="profiles/bg_off_fast_beautiful.ini")
     ap.add_argument("--stop-at", type=int, default=None)
     ap.add_argument("--random-samples", type=int, default=None)
     ap.add_argument("--mutated-samples", type=int, default=None)
     ap.add_argument("--post-passes", type=int, default=None,
-                    help="0=sem pos, 1=so prune, 2=prune+1 refine (default), 3+=refines extras")
+                    help="0=sem pos, >=1 diagnostico + refines (default do perfil), N preservado")
     ap.add_argument("--preview", default="checkpoints", choices=["none", "checkpoints"],
                     help="none: sem PNG; checkpoints: so saveAt + final")
     ap.add_argument("--outdir", default=None)
