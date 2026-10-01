@@ -1,7 +1,10 @@
 # AGENTS.md — FM_Painter
 
 CPU/OpenCL image→shapes generator whose JSONs are imported into Forza games.
-Read `melhorias.md` (backlog) and `bugs.md` (open B1–B6) before planning work.
+Read `ESTADO.md` (current state + pending decisions), `melhorias.md` (backlog)
+and `bugs.md` (open B1–B6) before planning work.
+Run sessions with cwd at the repo root — project skills (`.opencode/skills/`)
+only resolve when the working directory is inside this worktree.
 
 ## Boundaries (do not cross)
 
