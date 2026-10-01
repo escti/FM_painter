@@ -1,0 +1,7 @@
+# Normaliza finais de linha (repo editado no Windows, lido em qualquer SO)
+* text=auto
+*.py text eol=lf
+*.bat text eol=crlf
+*.ini text eol=lf
+*.md text eol=lf
+*.json text eol=lf
