@@ -1,0 +1,21 @@
+# Gerados (pesados e reproduzíveis — nunca versionar)
+output/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Windows / editores
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+
+# Temporários
+tmp/
+*.tmp
+*.log

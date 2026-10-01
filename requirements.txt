@@ -1,0 +1,4 @@
+Pillow>=10.0
+numpy>=1.26
+numba>=0.59
+pyopencl>=2024.1
