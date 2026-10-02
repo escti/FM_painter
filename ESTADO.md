@@ -125,6 +125,19 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
   Entregáveis v10: `output/efr_logo2_bg_off_v10_gpu/efr_logo2_bg_off.json`
   (exe/FH5) + `output/for_kfps/efr_v10_gpu.500.json` (KFPS/FM8), ambos check-OK.
   **Novo campeão**. Falta validação in-game.
+- G5 tuning (v11, `output/efr_logo2_bg_off_v11_400k/`): busca ampliada
+  (400k/2000/6/k32) + fit-inside + spill 3000, sem late/adaptive (esses
+  PIORAM o RMSE no GPU). 500 em 253s. **RMSE nativo 0,13271** e spill 11,9%.
+  Comparação justa (mesmo renderizador, canvas nativo 1024²):
+  **KFPS 500v2 = 0,13458** vs nosso v11 = **0,13271** → numericamente
+  **passamos o KFPS**. Luma (12) confirmado pior no original (trapaça no
+  alvo posterizado). Entregáveis v11: `.../efr_logo2_bg_off.json` +
+  `output/for_kfps/efr_v11_400k.500.json`, check-OK.
+- GAP PERCEPTUAL restante (dono decide): mesmo com RMSE melhor, o KFPS
+  *parece* mais limpo porque concentra erro nas bordas/texto (EFR nítido),
+  enquanto o nosso MSE gasta erro em manchas de cor média (cinzas) em áreas
+  texturizadas. Próximo passo focado: loss perceptual/estrutural (edge-aware
+  correto, estilo UDF do LIVE) usando a GPU — o G3 estático não resolveu.
 
 ## Provado in-game (FM8)
 

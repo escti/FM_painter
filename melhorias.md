@@ -33,6 +33,10 @@
    84–95%); com interior erodido fica segura mas não se paga aqui
    (v8: 0.14573 / 14,8% vs v6 0.14041 / 14,9%). **Estacionado** — UDF de
    verdade (distância ao contorno do shape) é caro; reavaliar no sampler.
+   **PRIORIDADE após G5**: o v11 já bate o KFPS em RMSE (0,13271 vs 0,13458)
+   mas *parece* pior — o MSE gasta erro em manchas de cor média em áreas
+   texturizadas em vez das bordas/texto. Loss edge-aware/estrutural correto
+   (UDF do LIVE, agora viável na GPU) é o caminho para fechar o gap visual.
 5. **Mutação adaptativa por shape** — encolhe o passo a cada falha, reseta
    no acerto, 50% das vezes passo aleatório (Exp D, anti-mínimo-local).
 6. **Sweep de pós 0/1/2/3** sobre resultado 500 já salvo (só pós, sem

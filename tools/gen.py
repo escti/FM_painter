@@ -22,6 +22,8 @@ def main():
     ap.add_argument("--stop-at", type=int, default=None)
     ap.add_argument("--random-samples", type=int, default=None)
     ap.add_argument("--mutated-samples", type=int, default=None)
+    ap.add_argument("--mutation-rounds", type=int, default=None)
+    ap.add_argument("--max-radius-div", type=int, default=None)
     ap.add_argument("--post-passes", type=int, default=None,
                     help="0=sem pos, >=1 diagnostico + refines (default do perfil), N preservado")
     ap.add_argument("--spill-penalty", type=float, default=None,
@@ -58,6 +60,10 @@ def main():
         prof["randomSamples"] = args.random_samples
     if args.mutated_samples:
         prof["mutatedSamples"] = args.mutated_samples
+    if args.mutation_rounds:
+        prof["mutationRounds"] = args.mutation_rounds
+    if args.max_radius_div:
+        prof["maxShapeRadiusDiv"] = args.max_radius_div
     if args.post_passes is not None:
         prof["postPasses"] = args.post_passes
     if args.spill_penalty is not None:
