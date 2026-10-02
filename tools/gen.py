@@ -34,6 +34,16 @@ def main():
                     help="teto de aspecto G2 (default do perfil, 0=off)")
     ap.add_argument("--edge-boost", type=float, default=None,
                     help="peso de borda G3 (default do perfil, 0=off)")
+    ap.add_argument("--late-small-share", type=float, default=None,
+                    help="fração pequena na 2a metade G2/3+11 (0=off)")
+    ap.add_argument("--adaptive-mut", action="store_true",
+                    help="mutação adaptativa G2/5 (default off)")
+    ap.add_argument("--refine-top-k", type=int, default=None,
+                    help="two-stage top-K G2/2 (0=off, caminho original)")
+    ap.add_argument("--luma-bands", type=int, default=None,
+                    help="Luma Prep G2/12 (0=off; off p/ arte sombreada)")
+    ap.add_argument("--backend", default=None,
+                    help="backend de scoring G5: cpu|opencl|auto (default cpu)")
     ap.add_argument("--preview", default="checkpoints", choices=["none", "checkpoints"],
                     help="none: sem PNG; checkpoints: so saveAt + final")
     ap.add_argument("--outdir", default=None)
@@ -60,6 +70,16 @@ def main():
         prof["maxAspect"] = args.max_aspect
     if args.edge_boost is not None:
         prof["edgeBoost"] = args.edge_boost
+    if args.late_small_share is not None:
+        prof["lateSmallShare"] = args.late_small_share
+    if args.adaptive_mut:
+        prof["adaptiveMut"] = 1
+    if args.refine_top_k is not None:
+        prof["refineTopK"] = args.refine_top_k
+    if args.luma_bands is not None:
+        prof["lumaBands"] = args.luma_bands
+    if args.backend is not None:
+        prof["backend"] = args.backend
 
     img_path = args.image if os.path.isabs(args.image) else os.path.join(base_dir, args.image)
     if not os.path.exists(img_path) and os.path.exists(args.image):
@@ -67,7 +87,8 @@ def main():
 
     target, current, mask, stats = load_target(
         img_path, max_resolution=prof["maxResolution"],
-        alpha_threshold=prof["alphaThreshold"])
+        alpha_threshold=prof["alphaThreshold"],
+        luma_bands=int(prof.get("lumaBands", 0)))
     print(f"[info] {img_path} -> work={stats['work_size']} "
           f"transparente={stats['pct_transparente']:.1f}% avg={stats['avg_color']}")
 

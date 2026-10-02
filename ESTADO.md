@@ -93,10 +93,38 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
 - Full-500 com borda v8 (v6 + k=3, `output/efr_logo2_bg_off_v8_edge/`):
   RMSE 0.14573 e spill 14,8% — **pior que o v6 nos dois, gap não fechou**.
   k=1 `@100`: RMSE 0,21271, spill 8,3% (entre sem-borda e k=3, sem vantagem).
+- G2 resto (testes 30/30 OK, tudo default off): late-small (3+11,
+  `lateSmallShare/Start/detailMaxR`, `@100` 0,20956/8,0% — inconclusivo por
+  construção, precisa do 500); mutação adaptativa (5, `adaptiveMut`,
+  `@100` 0,20864/**4,0%** — melhor spill até aqui); two-stage top-K (2,
+  `refineTopK=8`, orçamento neutro 9600 scorings/shape, `@100` **0,20782**
+  melhor RMSE); luma opt-in (12, `--luma-bands`, confirmado OFF p/ EFR:
+  0,21253 vs 0,20984 no ORIGINAL — docs KFPS tinham razão).
+  Stack `@100`: 0,20782/4,5%. Falta o 500 full-stack vs v6 (0,14041/14,9%).
+- Full-500 full-stack v9 (trava+multa+late+adaptativa+topK8,
+  `output/efr_logo2_bg_off_v9_g2/`): RMSE **0.13962 (recorde)** e spill
+  **13,0%** (29510 px) — **novo campeão nos dois eixos** (v6: 0,14041/14,9%).
+  Entregáveis: `output/efr_logo2_bg_off_v9_g2/efr_logo2_bg_off.json`
+  (exe/FH5, check-OK) + `output/for_kfps/efr_v9_g2.500.json` (KFPS/FM8,
+  check-OK). G2 dado como completo (itens 2,3,5,11 colhidos; 12 opt-in).
   **G3 estacionado**: mecanismo pronto e testado (default off), mas peso de
   borda estático não paga nesta imagem — borda de verdade (UDF por distância
   ao contorno do shape) exigiria reescore por candidato, caro; reavaliar no
   G2-sampler (amostragem guiada por erro já foca texto). **v6 segue campeão**.
+- G5 GPU (itens 1/5, `src/opencl_backend.py`, default **off** via
+  `backend=cpu`; CLI `--backend opencl`): kernels OpenCL C portáveis
+  (score/apply/erro) residentes, com fallback CPU. Device gfx1201
+  (`OpenCL C 2.0`; 2.2 é inalcançável/irrelevante — sem SPIR-V). Testes
+  34/34 OK incl. paridade CPU×GPU (argmin, apply, erro).
+  Lições de kernel: (a) 1 work-item/candidato divergia (tempo = maior bbox);
+  (b) work-group por candidato + linhas coalescidas resolveu; (c) sampler
+  Python (744ms/50k) virou gargalo → vetorizado (`candidates._sample_centers`,
+  40ms/50k). Escala medida: 50k GPU≈18ms vs CPU 605ms (~34x); 200k≈62ms.
+  Full-500 GPU @50k (`output/efr_logo2_bg_off_v10_gpu/`): 64s gen + pós,
+  RMSE **0.13520** e spill 14,0% — melhor que o v9 CPU (0,13962, 197s).
+  Entregáveis v10: `output/efr_logo2_bg_off_v10_gpu/efr_logo2_bg_off.json`
+  (exe/FH5) + `output/for_kfps/efr_v10_gpu.500.json` (KFPS/FM8), ambos check-OK.
+  **Novo campeão**. Falta validação in-game.
 
 ## Provado in-game (FM8)
 
@@ -113,7 +141,8 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
    validação no jogo (full-canvas + ausência de lajes).
 2. ~~**Normalizador KFPS→`.exe`**~~ feito no G1 (`--check` cobre exe|kfps).
 3. **Trilha**: (A) adotar KFPS / (B) continuar CPU / (C) híbrida.
-4. **Go do backend GPU** + teto de tempo (antes: 1h por bateria).
+4. ~~**Go do backend GPU**~~ feito no G5 (`--backend opencl`, default cpu;
+   50k/shape em ~90ms; falta decidir orçamento oficial por run e teto de tempo).
 5. **Resolução 1536** — estacionada (exige 1 import de validação).
 
 ## Dependências externas (fora do repo)

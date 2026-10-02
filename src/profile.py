@@ -28,6 +28,13 @@ DEFAULTS = {
     "fullCanvas": 0,
     "maxAspect": 0.0,
     "edgeBoost": 0.0,
+    "lateSmallShare": 0.0,
+    "lateSmallStart": 0.5,
+    "detailMaxR": 4,
+    "adaptiveMut": 0,
+    "refineTopK": 0,
+    "lumaBands": 0,
+    "backend": "cpu",
 }
 
 INT_KEYS = {
@@ -36,9 +43,11 @@ INT_KEYS = {
     "stopAt", "redundantCheckEvery", "opaqueOnly", "alphaThreshold",
     "maxShapeRadiusDiv", "minShapeRadius", "mutationRounds",
     "postPasses", "postMutations", "fitInsideBbox", "fullCanvas",
+    "detailMaxR", "adaptiveMut", "refineTopK", "lumaBands",
 }
 
-FLOAT_KEYS = {"redundantTol", "spillPenalty", "maxAspect", "edgeBoost"}
+FLOAT_KEYS = {"redundantTol", "spillPenalty", "maxAspect", "edgeBoost",
+              "lateSmallShare", "lateSmallStart"}
 
 
 def load_profile(path):

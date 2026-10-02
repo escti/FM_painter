@@ -12,6 +12,58 @@ from .candidates import random_candidates, mutate_candidates
 from .edgeweight import edge_weights
 
 
+class CpuScorer:
+    """Adapter CPU (mesma interface do GpuScorer) sobre o backend numba."""
+
+    def __init__(self, target, current, mask, emap, spill_w):
+        self.target = target
+        self.current = current
+        self.mask = mask
+        self.emap = emap
+        self.spill_w = spill_w
+        self.H, self.W = mask.shape
+
+    def score(self, cands):
+        res = score_parallel(self.target, self.current, self.mask, cands,
+                             spill_w=self.spill_w, edge_map=self.emap)
+        from .scoring import BatchScores
+        if not len(res):
+            e = np.empty(0)
+            return BatchScores(e, e, e, e, e, e.astype(np.int64))
+        a = np.asarray(res, dtype=np.float64)
+        return BatchScores(a[:, 0], a[:, 1], a[:, 2], a[:, 3], a[:, 4],
+                           a[:, 5].astype(np.int64))
+
+    def apply(self, cx, cy, rx, ry, ang, r, g, b, a):
+        apply_ellipse_alpha_nb(self.current, self.mask, self.W, self.H,
+                               cx, cy, rx, ry, ang, r, g, b, a)
+
+    def error(self):
+        return float(full_error_nb(self.target, self.current, self.mask,
+                                   self.W, self.H))
+
+    def read_current(self):
+        return self.current
+
+
+def make_scorer(profile, target, current, mask, emap, spill_w, log=print):
+    """Escolhe backend (G5): opencl/gpu/auto com fallback CPU."""
+    backend = str(profile.get("backend", "cpu")).lower()
+    if backend in ("opencl", "gpu", "auto"):
+        try:
+            from .opencl_backend import GpuScorer, available, _get_context
+            if available():
+                g = GpuScorer(target, current, mask, emap, spill_w)
+                _, _, _, devname = _get_context()
+                log(f"[gen] backend=opencl device={devname}")
+                return g, True
+            if backend in ("opencl", "gpu"):
+                log("[gen] aviso: OpenCL indisponivel; usando CPU")
+        except Exception as e:
+            log(f"[gen] aviso: OpenCL falhou ({e}); usando CPU")
+    return CpuScorer(target, current, mask, emap, spill_w), False
+
+
 def resolve_workers(max_threads):
     import os as _os
     n = _os.cpu_count() or 4
@@ -40,11 +92,25 @@ def generate(target, current, mask, profile, out_dir, base_name,
     spill_w = float(profile.get("spillPenalty", 0.0))
     fit_inside = bool(profile.get("fitInsideBbox", 0))
     max_aspect = float(profile.get("maxAspect", 0.0))
+    adaptive_mut = bool(profile.get("adaptiveMut", 0))
+    refine_top_k = int(profile.get("refineTopK", 0))
+    late_share = float(profile.get("lateSmallShare", 0.0))
+    late_start = float(profile.get("lateSmallStart", 0.5))
+    detail_max_r = int(profile.get("detailMaxR", 4))
     emap = edge_weights(target, float(profile.get("edgeBoost", 0.0)),
                          mask=mask)
+    scorer, gpu = make_scorer(profile, target, current, mask, emap, spill_w,
+                              log=log)
+
+    def do_apply(cx, cy, rx, ry, ang, r, g, b, a):
+        scorer.apply(cx, cy, rx, ry, ang, r, g, b, a)
+        if gpu and current is not None:
+            # espelho CPU p/ a amostragem guiada (error_tiles) continuar fresca
+            apply_ellipse_alpha_nb(current, mask, W, H, cx, cy, rx, ry, ang,
+                                   r, g, b, a)
 
     t0 = time.time()
-    err = float(full_error_nb(target, current, mask, W, H))
+    err = scorer.error()
     log(f"[gen] work={W}x{H} opaco={mask.mean()*100:.1f}% threads={n_workers} "
         f"rand={profile['randomSamples']} mut={profile['mutatedSamples']} "
         f"rounds={profile['mutationRounds']} opaco_only={int(opaque_only)} "
@@ -58,30 +124,53 @@ def generate(target, current, mask, profile, out_dir, base_name,
             max_r_div=profile["maxShapeRadiusDiv"], rng=rng,
             target=target, current=current, progress=progress,
             opaque_only=opaque_only, fit_inside=fit_inside,
-            max_aspect=max_aspect)
-        res = score_parallel(target, current, mask, cands, spill_w=spill_w,
-                             edge_map=emap)
-        bi = int(np.argmin([r[0] for r in res]))
-        best_d, br, bg, bb, ba, cnt = res[bi]
+            max_aspect=max_aspect, late_share=late_share,
+            late_start=late_start, detail_max_r=detail_max_r)
+        res = scorer.score(cands)
+        bi = res.argmin()
+        best_d, br, bg, bb, ba, cnt = res.get(bi)
         best = cands[bi].copy()
 
-        for _ in range(profile["mutationRounds"]):
+        scale, base_scale = 0.15, 0.15
+        first_rounds = 1 if refine_top_k > 1 else 0
+        if refine_top_k > 1:
+            # G2/2 two-stage (CPU): 1a rodada distribuida no top-K em vez de
+            # só no melhor; restante dos rounds no vencedor global. Orçamento:
+            # random + K*mut_each + (R-1)*mut ≈ caminho original.
+            order = res.argsort(refine_top_k)
+            mut_each = max(50, profile["mutatedSamples"] // refine_top_k)
+            for bi_k in order:
+                bk = cands[int(bi_k)].copy()
+                muk = mutate_candidates(
+                    bk, mut_each, W, H, mask, rng=rng,
+                    opaque_only=opaque_only, fit_inside=fit_inside,
+                    max_aspect=max_aspect, scale=scale)
+                mrk = scorer.score(muk)
+                mik = mrk.argmin()
+                if mrk.delta[mik] < best_d:
+                    best_d, br, bg, bb, ba, cnt = mrk.get(mik)
+                    best = muk[mik].copy()
+        for _ in range(profile["mutationRounds"] - first_rounds):
+            if adaptive_mut and rng.random() < 0.5:
+                scale = float(rng.uniform(0.05, 0.30))  # Exp D: passo aleatorio
             muts = mutate_candidates(best, profile["mutatedSamples"], W, H, mask, rng=rng,
                                      opaque_only=opaque_only, fit_inside=fit_inside,
-                                     max_aspect=max_aspect)
-            mres = score_parallel(target, current, mask, muts, spill_w=spill_w,
-                                  edge_map=emap)
-            mi = int(np.argmin([r[0] for r in mres]))
-            if mres[mi][0] < best_d:
-                best_d, br, bg, bb, ba, cnt = mres[mi]
+                                     max_aspect=max_aspect, scale=scale)
+            mres = scorer.score(muts)
+            mi = mres.argmin()
+            if mres.delta[mi] < best_d:
+                best_d, br, bg, bb, ba, cnt = mres.get(mi)
                 best = muts[mi].copy()
+                if adaptive_mut:
+                    scale = base_scale  # acerto: reseta o passo
+            elif adaptive_mut:
+                scale = max(0.02, scale * 0.7)  # falha: encolhe (anti-minimo-local)
 
         if best_d < 0 and cnt > 0:
             cx, cy, rx, ry, ang, alp = [float(x) for x in best]
-            apply_ellipse_alpha_nb(current, mask, W, H, cx, cy, rx, ry, ang,
-                                   br, bg, bb, ba)
+            do_apply(cx, cy, rx, ry, ang, br, bg, bb, ba)
             shapes.append((cx, cy, rx, ry, ang, br, bg, bb, ba))
-            err = float(full_error_nb(target, current, mask, W, H))
+            err = scorer.error()
             scores.append(err)
         else:
             scores.append(err)
@@ -93,7 +182,8 @@ def generate(target, current, mask, profile, out_dir, base_name,
         if step in save_at or step == stop_at:
             if save_preview_cb:
                 try:
-                    save_preview_cb(step if step != stop_at else "final", current)
+                    save_preview_cb(step if step != stop_at else "final",
+                                    scorer.read_current())
                 except Exception as e:
                     log(f"[gen] preview falhou: {e}")
             dump_json(out_dir, base_name, W, H, shapes, scores,

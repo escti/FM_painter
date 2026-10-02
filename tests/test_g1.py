@@ -139,5 +139,93 @@ class TestAspectCap(unittest.TestCase):
             .parameters["max_aspect"].default, 0.0)
 
 
+class TestLateSmall(unittest.TestCase):
+    def test_share_forces_small(self):
+        H, W = 64, 64
+        mask = np.zeros((H, W), dtype=np.bool_)
+        mask[8:56, 8:56] = True
+        rng = np.random.default_rng(11)
+        c = random_candidates(200, W, H, mask, rng=rng, target=None,
+                              current=None, progress=0.9, late_share=1.0,
+                              late_start=0.5, detail_max_r=4)
+        self.assertGreater(len(c), 0)
+        for _, _, rx, ry, _, _ in c:
+            self.assertLessEqual(max(rx, ry), 4.0 + 1e-6)
+
+    def test_off_by_default(self):
+        from src import candidates
+        import inspect
+        self.assertEqual(
+            inspect.signature(candidates.random_candidates)
+            .parameters["late_share"].default, 0.0)
+
+
+class TestAdaptiveMut(unittest.TestCase):
+    def test_scale_flows_to_mutants(self):
+        from src.candidates import mutate_candidates
+        H, W = 64, 64
+        mask = np.zeros((H, W), dtype=np.bool_)
+        mask[8:56, 8:56] = True
+        rng = np.random.default_rng(5)
+        base = np.array([32, 32, 10, 10, 0, 255], dtype=np.float32)
+        muts = mutate_candidates(base, 50, W, H, mask, rng=rng, scale=0.01)
+        self.assertTrue((np.abs(muts[:, 0] - 32) < 3.0).all())
+
+    def test_off_by_default(self):
+        from src.profile import load_profile
+        import tempfile, os
+        fd, pp = tempfile.mkstemp(suffix=".ini")
+        os.write(fd, b"stopAt = 10\n")
+        os.close(fd)
+        self.assertEqual(load_profile(pp)["adaptiveMut"], 0)
+        os.remove(pp)
+
+
+class TestTwoStage(unittest.TestCase):
+    def test_topk_path_preserves_count(self):
+        from src.generator import generate
+        H, W = 32, 32
+        target = (np.random.default_rng(2)
+                  .integers(0, 255, (H, W, 3)).astype(np.uint8))
+        current = np.zeros((H, W, 3), dtype=np.uint8) + 50
+        mask = np.ones((H, W), dtype=np.bool_)
+        prof = {"stopAt": 3, "saveAt": [], "maxThreads": 1,
+                "randomSamples": 20, "mutatedSamples": 10,
+                "mutationRounds": 2, "minShapeRadius": 2,
+                "maxShapeRadiusDiv": 4, "refineTopK": 4}
+        import tempfile
+        shapes, _ = generate(target, current, mask, prof,
+                             tempfile.mkdtemp(), "t", log=lambda *a: None)
+        self.assertEqual(len(shapes), 3)
+
+
+class TestLumaBands(unittest.TestCase):
+    def test_off_is_identity(self):
+        from src.image import load_target
+        t0, _, m0, _ = load_target(
+            "D:/users/thiag/downloads/forza/imagens_originais"
+            "/efr_logo2_bg_off.png", luma_bands=0)
+        t1, _, m1, _ = load_target(
+            "D:/users/thiag/downloads/forza/imagens_originais"
+            "/efr_logo2_bg_off.png")
+        self.assertTrue((t0 == t1).all())
+        self.assertTrue((m0 == m1).all())
+
+    def test_bands_reduce_luminance_levels(self):
+        from src.image import load_target
+        t0, _, m, _ = load_target(
+            "D:/users/thiag/downloads/forza/imagens_originais"
+            "/efr_logo2_bg_off.png", luma_bands=0)
+        t, _, _, _ = load_target(
+            "D:/users/thiag/downloads/forza/imagens_originais"
+            "/efr_logo2_bg_off.png", luma_bands=4)
+        self.assertFalse((t == t0).all())  # posteriza de verdade
+        lum = (0.299 * t[:, :, 0].astype(float)
+               + 0.587 * t[:, :, 1].astype(float)
+               + 0.114 * t[:, :, 2].astype(float))
+        coarse = set(np.unique((lum[m] // 32).astype(int)).tolist())
+        self.assertLessEqual(len(coarse), 6)  # 4 faixas (+arredondamento)
+
+
 if __name__ == "__main__":
     unittest.main()

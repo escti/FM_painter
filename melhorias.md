@@ -13,9 +13,16 @@
    kernel de teste executado em `gfx1201`). Objetivo: busca ~400k
    candidatos/shape a ~100ms/shape para superar o KFPS, combinada com
    amostragem guiada + pós com aceite global (já provados melhores no 3000).
+   **Feito no G5** (`src/opencl_backend.py`, `--backend opencl`, default cpu):
+   implementação usou **work-group por candidato** (não 1 work-item — a
+   divergência de bbox dominava) e linhas coalescidas; sampler vetorizado.
+   50k/shape ≈ 18ms (CPU 605ms, ~34x); full-500 @50k em 64s com RMSE 0,13520.
+   Ver `ESTADO.md` seção G5.
 2. **Two-stage random** — amostra grossa (passo 2) + refina top-K=2048
    (parâmetros calibrados do KFPS: `randomCoarseSampleStep=2`,
    `randomRefineTopK=2048`).
+   Implementado (CPU/G2) como `refineTopK` (top-K distribuído no orçamento);
+   com GPU o top-2048 do KFPS passa a ser viável — reavaliar o K no G5.
 3. **Late-small candidates** — 66% dos candidatos pequenos na 2ª metade do
    run (texto fino; `lateSmallCandidateShare=0.66`,
    `lateSmallCandidateStart=0.50`).

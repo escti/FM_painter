@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 
 
-def load_target(path, max_resolution=1024, alpha_threshold=10):
+def load_target(path, max_resolution=1024, alpha_threshold=10, luma_bands=0):
     im = Image.open(path).convert("RGBA")
     ow, oh = im.size
 
@@ -39,6 +39,22 @@ def load_target(path, max_resolution=1024, alpha_threshold=10):
     target = arr[:, :, :3].copy()  # RGB
     # zera RGB onde transparente para nao contaminar medias
     target[~mask] = 0
+
+    if luma_bands and luma_bands > 0:
+        # G2/12 Luma Prep opt-in (docs KFPS): posteriza a luminancia em B
+        # faixas preservando o matiz. Para regioes chapadas/stickers; o
+        # proprio manual manda DESLIGAR p/ arte sombreada (ex. EFR).
+        lum = (0.299 * target[:, :, 0].astype(np.float32)
+               + 0.587 * target[:, :, 1].astype(np.float32)
+               + 0.114 * target[:, :, 2].astype(np.float32))
+        B = int(luma_bands)
+        band = ((np.floor(lum * B / 256.0) + 0.5) * 255.0 / B)
+        scale = np.ones_like(lum)
+        nz = lum > 1e-6
+        scale[nz] = band[nz] / lum[nz]
+        target = np.clip(target.astype(np.float32) * scale[:, :, None],
+                         0, 255).astype(np.uint8)
+        target[~mask] = 0
 
     # cor inicial = media dos opacos (como geometrize faz com average)
     if mask.any():
