@@ -26,6 +26,8 @@ DEFAULTS = {
     "spillPenalty": 0.0,
     "fitInsideBbox": 0,
     "fullCanvas": 0,
+    "maxAspect": 0.0,
+    "edgeBoost": 0.0,
 }
 
 INT_KEYS = {
@@ -36,7 +38,7 @@ INT_KEYS = {
     "postPasses", "postMutations", "fitInsideBbox", "fullCanvas",
 }
 
-FLOAT_KEYS = {"redundantTol", "spillPenalty"}
+FLOAT_KEYS = {"redundantTol", "spillPenalty", "maxAspect", "edgeBoost"}
 
 
 def load_profile(path):

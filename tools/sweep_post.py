@@ -52,6 +52,8 @@ def main():
     ap.add_argument("--tol", type=float, default=0.0002)
     ap.add_argument("--spill-w", type=float, default=0.0,
                     help="penalidade de spill G1/9a (fatiado: 1 valor por run)")
+    ap.add_argument("--edge-boost", type=float, default=0.0,
+                    help="peso de borda G3 (fatiado: 1 valor por run)")
     a = ap.parse_args()
 
     passes_list = [int(x) for x in a.passes.split(",") if x.strip().isdigit()]
@@ -68,8 +70,12 @@ def main():
           f"transp={stats['pct_transparente']:.1f}%")
 
     # saida separada por w (fatiado: 1 valor por run; nao mistura baselines)
-    outdir = OUTDIR if a.spill_w == 0.0 else f"{OUTDIR}_w{a.spill_w:g}"
+    tag = f"_w{a.spill_w:g}" if a.spill_w else ""
+    tag += f"_e{a.edge_boost:g}" if a.edge_boost else ""
+    outdir = OUTDIR + tag if tag else OUTDIR
     os.makedirs(outdir, exist_ok=True)
+    from src.edgeweight import edge_weights
+    emap = edge_weights(target, a.edge_boost, mask=mask)
     results = []
     for p in passes_list:
         shapes = list(base_shapes)
@@ -78,14 +84,14 @@ def main():
             shapes = post_process(shapes, target, mask, bg, passes=p,
                                   post_mutations=a.post_mutations,
                                   tol=a.tol, opaque_only=True,
-                                  spill_w=a.spill_w)
+                                  spill_w=a.spill_w, edge_map=emap)
         assert len(shapes) == n0, "pos nunca pode mudar a contagem"
         cur = render_all(shapes, W, H, mask, bg)
         err = float(full_error_nb(target, cur, mask, W, H))
         dt = time.time() - t0
         results.append((p, err, dt))
-        print(f"[sweep] passes={p} spill_w={a.spill_w:g} err={err:.5f} "
-              f"t={dt:.0f}s (N={len(shapes)})")
+        print(f"[sweep] passes={p} spill_w={a.spill_w:g} edge={a.edge_boost:g} "
+              f"err={err:.5f} t={dt:.0f}s (N={len(shapes)})")
         # salva refinado em dir separada (nao sobrescreve checkpoints -> B3)
         scores = [err] * len(shapes)
         dump_json(outdir, "efr_logo2_bg_off", W, H, shapes, scores,
@@ -93,8 +99,8 @@ def main():
 
     with open(os.path.join(outdir, "metricas.txt"), "w", encoding="utf-8") as f:
         for p, err, dt in results:
-            f.write(f"passes={p} spill_w={a.spill_w:g} RMSE={err:.5f} "
-                    f"t={dt:.0f}s N={n0}\n")
+            f.write(f"passes={p} spill_w={a.spill_w:g} edge={a.edge_boost:g} "
+                    f"RMSE={err:.5f} t={dt:.0f}s N={n0}\n")
     print(f"[ok] metricas em {outdir}/metricas.txt")
 
 

@@ -30,6 +30,10 @@ def main():
                     help="trava fit-inside-bbox G1/9b (default off)")
     ap.add_argument("--full-canvas", action="store_true",
                     help="export full-canvas G1/9c opt-in (fix B2)")
+    ap.add_argument("--max-aspect", type=float, default=None,
+                    help="teto de aspecto G2 (default do perfil, 0=off)")
+    ap.add_argument("--edge-boost", type=float, default=None,
+                    help="peso de borda G3 (default do perfil, 0=off)")
     ap.add_argument("--preview", default="checkpoints", choices=["none", "checkpoints"],
                     help="none: sem PNG; checkpoints: so saveAt + final")
     ap.add_argument("--outdir", default=None)
@@ -52,6 +56,10 @@ def main():
         prof["fitInsideBbox"] = 1
     if args.full_canvas:
         prof["fullCanvas"] = 1
+    if args.max_aspect is not None:
+        prof["maxAspect"] = args.max_aspect
+    if args.edge_boost is not None:
+        prof["edgeBoost"] = args.edge_boost
 
     img_path = args.image if os.path.isabs(args.image) else os.path.join(base_dir, args.image)
     if not os.path.exists(img_path) and os.path.exists(args.image):
@@ -79,8 +87,8 @@ def main():
     # scoring/render seguem no espaco recortado; checkpoints do generate()
     # acima ficam recortados, os re-salvos abaixo sao os autoritativos.
     full_canvas = bool(prof.get("fullCanvas", 0))
-    x0, y0, x1, y1 = stats["crop"]
-    ow, oh = stats["orig_size"]
+    x0, y0, x1, y1 = (int(v) for v in stats["crop"])
+    ow, oh = (int(v) for v in stats["orig_size"])
     expW, expH, expo = (ow, oh, (x0, y0)) if full_canvas else (
         x1 - x0, y1 - y0, (0, 0))
     if full_canvas:
@@ -89,16 +97,21 @@ def main():
     # pos-processamento configuravel (N sempre preservado p/ template)
     if prof["postPasses"] > 0:
         import numpy as np
+        from src.edgeweight import edge_weights
         bg = np.array(stats["avg_color"], dtype=np.uint8)
         H, W = mask.shape
         n0 = len(shapes)
         opaque_only = bool(prof.get("opaqueOnly", 1))
+        emap = edge_weights(target, float(prof.get("edgeBoost", 0.0)),
+                             mask=mask)
         shapes = post_process(shapes, target, mask, bg,
                               passes=prof["postPasses"],
                               post_mutations=prof["postMutations"],
                               tol=float(prof["redundantTol"]),
                               opaque_only=opaque_only,
-                              spill_w=float(prof.get("spillPenalty", 0.0)))
+                              spill_w=float(prof.get("spillPenalty", 0.0)),
+                              max_aspect=float(prof.get("maxAspect", 0.0)),
+                              edge_map=emap)
         assert len(shapes) == n0, "pos nao pode mudar a contagem"
         # re-render final + re-score + re-salva checkpoints como prefixos
         from src.post import render_all

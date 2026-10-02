@@ -119,5 +119,25 @@ class TestSimpreview(unittest.TestCase):
         self.assertEqual((W, H), (64, 64))
 
 
+class TestAspectCap(unittest.TestCase):
+    def test_random_respects_cap(self):
+        H, W = 64, 64
+        mask = np.zeros((H, W), dtype=np.bool_)
+        mask[8:56, 8:56] = True
+        rng = np.random.default_rng(3)
+        c = random_candidates(300, W, H, mask, rng=rng, target=None,
+                              current=None, max_aspect=8.0)
+        self.assertGreater(len(c), 0)
+        for _, _, rx, ry, _, _ in c:
+            self.assertLessEqual(max(rx, ry) / max(1.0, min(rx, ry)), 8.0)
+
+    def test_off_by_default(self):
+        from src import candidates
+        import inspect
+        self.assertEqual(
+            inspect.signature(candidates.random_candidates)
+            .parameters["max_aspect"].default, 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

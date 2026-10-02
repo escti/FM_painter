@@ -61,6 +61,42 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
 - Recomendado: `spillPenalty=3000` p/ runs com spill; default segue 0.0 até
   validação full-500. `fit-inside` com mecanismo+teste, sem validação em geração.
   Full-canvas opt-in, sem import de validação ainda.
+- Full-500 com multa (`output/efr_logo2_bg_off_v5_spill3000/`, gen 179s + pós):
+  RMSE 0.14059 (melhor que 0.14118 do v4) e spill 72,3%→**23,8%**
+  (163724→53805 px). Entregáveis: `output/sweep_post_500_w3000/`
+  `efr_logo2_bg_off.sweep1.json` (via exe/FH5, check-OK) +
+  `output/for_kfps/efr_v5_spill3000.500.json` (via KFPS/FM8, check-OK).
+  Bug achado e corrigido no run: `dump_json`/crop vazavam `np.int64`
+  (TypeError no save pós-refino) — corrigido com coerção p/ int; resgate via
+  `sweep_post --json` do pré-pós salvo. Aguardando import de validação no jogo.
+- Full-500 trava+multa v6 (`output/efr_logo2_bg_off_v6_fit_w3000/`, gen 186s):
+  RMSE **0.14041** (recorde) e spill 72,3%→**14,9%** (163724→33780 px).
+  `@100`: trava só = 19,2% spill + melhor RMSE (0,20727); trava+multa = 7,3%.
+  Entregáveis v6: `output/efr_logo2_bg_off_v6_fit_w3000/efr_logo2_bg_off.json`
+  (exe/FH5, check-OK) + `output/for_kfps/efr_v6_fit_w3000.500.json`
+  (KFPS/FM8, check-OK). KFPS-preview do v5 mostrou resto de spill (lajes
+  marrons no topo, ovais cinzas, agulhas, pingo embaixo) — v6 ataca isso.
+- Full-500 combo v7 = v6 + teto A=12 (`output/efr_logo2_bg_off_v7_combo/`):
+  RMSE 0.14133 e spill 15,2% (34486 px) — **pior que o v6 nos dois**.
+  Teto de aspecto ajuda qualidade no 100 mas não derruba spill no 500;
+  cinza lavado precisa do G3 (peso de borda estilo UDF, validado na literatura:
+  LIVE/CVPR22 `color mean error`, pesos pequenos). **v6 segue o campeão**;
+  entregável v7 em `output/for_kfps/efr_v7_combo.500.json` (check-OK) só p/
+  comparação no KFPS-preview.
+- G3 peso de borda (`src/edgeweight.py`: Sobel + p99, `w=1+k·e`, cor ótima
+  ponderada; `edgeBoost` default 0.0 + `--edge-boost`). Testes 23/23 OK.
+  Lição: borda SEM máscara de interior premia a silhueta → spill 84–95%
+  (k=3/k=8); com interior erodido (8px) o mapa fica seguro. `@100` com
+  trava+multa+k=3: spill **6,6%** (recorde) por RMSE 0,21394 (+0,005 vs
+  0,20895 sem borda). Cores saturadas cedo no EFR. Falta validar no 500
+  se o gap fecha; literatura (LIVE) manda pesos pequenos.
+- Full-500 com borda v8 (v6 + k=3, `output/efr_logo2_bg_off_v8_edge/`):
+  RMSE 0.14573 e spill 14,8% — **pior que o v6 nos dois, gap não fechou**.
+  k=1 `@100`: RMSE 0,21271, spill 8,3% (entre sem-borda e k=3, sem vantagem).
+  **G3 estacionado**: mecanismo pronto e testado (default off), mas peso de
+  borda estático não paga nesta imagem — borda de verdade (UDF por distância
+  ao contorno do shape) exigiria reescore por candidato, caro; reavaliar no
+  G2-sampler (amostragem guiada por erro já foca texto). **v6 segue campeão**.
 
 ## Provado in-game (FM8)
 

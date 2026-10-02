@@ -21,6 +21,11 @@
    `lateSmallCandidateStart=0.50`).
 4. **Loss ponderada por borda** — Sobel/Canny no target prioriza texto e
    filetes; literatura reporta +1–2 dB sem custo extra de busca (Exp C).
+   Implementado no G3 (`src/edgeweight.py`, Sobel + p99, cor ponderada,
+   `edgeBoost` default 0.0): versão ingênua premiava a silhueta (spill
+   84–95%); com interior erodido fica segura mas não se paga aqui
+   (v8: 0.14573 / 14,8% vs v6 0.14041 / 14,9%). **Estacionado** — UDF de
+   verdade (distância ao contorno do shape) é caro; reavaliar no sampler.
 5. **Mutação adaptativa por shape** — encolhe o passo a cada falha, reseta
    no acerto, 50% das vezes passo aleatório (Exp D, anti-mínimo-local).
 6. **Sweep de pós 0/1/2/3** sobre resultado 500 já salvo (só pós, sem
@@ -55,6 +60,8 @@
     incógnita). Estacionada para etapa futura.
 11. **Perfil detalhe-fino**: últimos N shapes só com raio 1–4px nos tiles
     de texto.
+    Extra G2 já pronto: teto de aspecto (`maxAspect`, default off, +`--max-aspect`;
+    A=12 dá melhor RMSE no 100 mas não derruba spill no 500 — v7 0.14133/15,2%).
 12. **Pré-processo luma bands** (ideia KFPS, sem teste).
 13. **Poda por importância** estilo KFPS (nosso `prune_diagnostic` é O(N²),
     caro no 3000).

@@ -48,9 +48,19 @@ def radius_for_progress(progress, W, H, min_r=2):
     return 1, max(4, m // 8)
 
 
+def _clamp_aspect(rx, ry, max_aspect):
+    """G2: teto de aspecto (0=off). Encolhe o maior eixo p/ menor*A."""
+    if max_aspect and max_aspect > 0:
+        major, minor = (rx, ry) if rx >= ry else (ry, rx)
+        if minor >= 1.0 and major / minor > max_aspect:
+            major = minor * max_aspect
+            rx, ry = (major, minor) if rx >= ry else (minor, major)
+    return rx, ry
+
+
 def random_candidates(n, W, H, mask, min_r=2, max_r_div=4, rng=None,
                       target=None, current=None, progress=0.5, guided=0.7,
-                      opaque_only=True, fit_inside=False):
+                      opaque_only=True, fit_inside=False, max_aspect=0.0):
     rng = rng or np.random.default_rng()
     x0, y0, x1, y1 = opaque_bbox(mask)
     lo, hi = radius_for_progress(progress, W, H, min_r)
@@ -88,6 +98,7 @@ def random_candidates(n, W, H, mask, min_r=2, max_r_div=4, rng=None,
         rx = float(np.exp(rng.uniform(log_min, log_max)))
         ry = float(np.exp(rng.uniform(log_min, log_max)))
         ang = float(rng.uniform(0, 360))
+        rx, ry = _clamp_aspect(rx, ry, max_aspect)
         if fit_inside:
             # G1/9b: trava conservadora — extensao (com rotacao) dentro da bbox opaca
             import math as _m
@@ -106,7 +117,7 @@ def random_candidates(n, W, H, mask, min_r=2, max_r_div=4, rng=None,
 
 
 def mutate_candidates(base, n, W, H, mask, rng=None, scale=0.15,
-                      opaque_only=True, fit_inside=False):
+                      opaque_only=True, fit_inside=False, max_aspect=0.0):
     """Muta 1 dos 6 params (alpha fixo em 255 se opaque_only)."""
     rng = rng or np.random.default_rng()
     cx, cy, rx, ry, ang, alp = [float(x) for x in base]
@@ -133,6 +144,7 @@ def mutate_candidates(base, n, W, H, mask, rng=None, scale=0.15,
             nalp = float(np.clip(alp + rng.normal(0, 40), 16, 255))
         ncx = min(max(ncx, 0), W - 1)
         ncy = min(max(ncy, 0), H - 1)
+        nrx, nry = _clamp_aspect(nrx, nry, max_aspect)
         if fit_inside:
             import math as _m
             ca, sa = abs(_m.cos(_m.radians(nang))), abs(_m.sin(_m.radians(nang)))
