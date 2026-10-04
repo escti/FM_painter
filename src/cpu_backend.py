@@ -12,7 +12,7 @@ import numba
 
 @numba.njit(nogil=True, fastmath=True)
 def _score_one(target, current, mask, emap, W, H, cx, cy, rx, ry, angle_deg,
-               alpha, spill_w):
+               alpha, spill_w, udf_boost, udf_tau, area_norm):
     if rx < 1.0:
         rx = 1.0
     if ry < 1.0:
@@ -61,12 +61,18 @@ def _score_one(target, current, mask, emap, W, H, cx, cy, rx, ry, angle_deg,
             dx = float(x) - cx
             lx = dx * ca + dy * sa
             ly = -dx * sa + dy * ca
-            if lx * lx * inv_rx2 + ly * ly * inv_ry2 > 1.0:
+            q = lx * lx * inv_rx2 + ly * ly * inv_ry2
+            if q > 1.0:
                 continue
             if not mask[y, x]:
                 spill += 1  # G1/9a: tinta sobre transparente (jogo nao tem mascara)
                 continue
             w = float(emap[y, x])
+            if udf_boost > 0.0:
+                # G6c UDF-lite (LIVE): reforca o contorno da propria elipse (q~1)
+                t = (1.0 - q) / udf_tau
+                if t < 1.0:
+                    w = w * (1.0 + udf_boost * (1.0 - t))
             cnt += 1
             tr = float(target[y, x, 0])
             tg = float(target[y, x, 1])
@@ -113,9 +119,14 @@ def _score_one(target, current, mask, emap, W, H, cx, cy, rx, ry, angle_deg,
             dx = float(x) - cx
             lx = dx * ca + dy * sa
             ly = -dx * sa + dy * ca
-            if lx * lx * inv_rx2 + ly * ly * inv_ry2 > 1.0:
+            q = lx * lx * inv_rx2 + ly * ly * inv_ry2
+            if q > 1.0:
                 continue
             w = float(emap[y, x])
+            if udf_boost > 0.0:
+                t = (1.0 - q) / udf_tau
+                if t < 1.0:
+                    w = w * (1.0 + udf_boost * (1.0 - t))
             tr = float(target[y, x, 0])
             tg = float(target[y, x, 1])
             tb = float(target[y, x, 2])
@@ -130,7 +141,10 @@ def _score_one(target, current, mask, emap, W, H, cx, cy, rx, ry, angle_deg,
             db = tb - nab
             err_after += w * (dr * dr + dg * dg + db * db)
 
-    return err_after - err_before + spill_w * spill, br, bg, bb, cnt
+    delta = err_after - err_before
+    if area_norm > 0.0:
+        delta = delta / (float(cnt) ** area_norm)
+    return delta + spill_w * spill, br, bg, bb, cnt
 
 
 # Compat: versao opaca antiga (alpha=255) para testes (wrapper Python, sem peso)
@@ -138,7 +152,8 @@ def score_candidate_nb(target, current, mask, W, H, cx, cy, rx, ry, angle_deg):
     import numpy as _np
     emap = _np.ones((H, W), dtype=_np.float32)
     d, r, g, b, c = _score_one(target, current, mask, emap, W, H,
-                               cx, cy, rx, ry, angle_deg, 255.0, 0.0)
+                               cx, cy, rx, ry, angle_deg, 255.0, 0.0,
+                               0.0, 0.25, 0.0)
     return d, int(r), int(g), int(b), c
 
 
@@ -218,7 +233,7 @@ def full_error_nb(target, current, mask, W, H):
 @numba.njit(parallel=True, nogil=True, fastmath=True)
 def score_batch_parallel_nb(target, current, mask, emap, cands,
                             out_delta, out_r, out_g, out_b, out_cnt, W, H,
-                            spill_w):
+                            spill_w, udf_boost, udf_tau, area_norm):
     """Um dispatch paralelo: 1 iteracao por candidato (prange libera todos os cores)."""
     n = cands.shape[0]
     for i in numba.prange(n):
@@ -226,7 +241,7 @@ def score_batch_parallel_nb(target, current, mask, emap, cands,
             target, current, mask, emap, W, H,
             float(cands[i, 0]), float(cands[i, 1]), float(cands[i, 2]),
             float(cands[i, 3]), float(cands[i, 4]), float(cands[i, 5]),
-            spill_w)
+            spill_w, udf_boost, udf_tau, area_norm)
         out_delta[i] = d
         out_r[i] = r
         out_g[i] = g
@@ -235,13 +250,14 @@ def score_batch_parallel_nb(target, current, mask, emap, cands,
 
 
 def score_batch(target, current, mask, candidates, spill_w=0.0,
-                edge_map=None):
+                edge_map=None, udf_boost=0.0, udf_tau=0.25, area_norm=0.0):
     """Fallback serial (candidatos 5-col opacos ou 6-col com alpha)."""
     import numpy as _np
     H, W = mask.shape
     em = (_np.ascontiguousarray(edge_map, dtype=_np.float32)
           if edge_map is not None
           else _np.ones((H, W), dtype=_np.float32))
+    ub, ut, an = float(udf_boost), float(udf_tau), float(area_norm)
     out = []
     for c in candidates:
         if len(c) >= 6:
@@ -249,20 +265,21 @@ def score_batch(target, current, mask, candidates, spill_w=0.0,
                 target, current, mask, em, W, H,
                 float(c[0]), float(c[1]), float(c[2]),
                 float(c[3]), float(c[4]), float(c[5]),
-                float(spill_w))
+                float(spill_w), ub, ut, an)
         else:
             d, r, g, b, cnt = _score_one(
                 target, current, mask, em, W, H,
                 float(c[0]), float(c[1]), float(c[2]),
                 float(c[3]), float(c[4]), 255.0,
-                float(spill_w))
+                float(spill_w), ub, ut, an)
         out.append((d, float(r), float(g), float(b),
                     float(c[5]) if len(c) >= 6 else 255.0, cnt))
     return out
 
 
 def score_parallel(target, current, mask, cands, spill_w=0.0,
-                   edge_map=None):
+                   edge_map=None, udf_boost=0.0, udf_tau=0.25,
+                   area_norm=0.0):
     """Sempre via prange (sem ThreadPool/GIL). Retorna lista de tuplas."""
     import numpy as np
     n = len(cands)
@@ -282,6 +299,8 @@ def score_parallel(target, current, mask, cands, spill_w=0.0,
           if edge_map is not None
           else np.ones((H, W), dtype=np.float32))
     score_batch_parallel_nb(target, current, mask, em, c, out_d, out_r, out_g,
-                            out_b, out_c, W, H, float(spill_w))
+                            out_b, out_c, W, H, float(spill_w),
+                            float(udf_boost), float(udf_tau),
+                            float(area_norm))
     return [(float(out_d[i]), float(out_r[i]), float(out_g[i]),
              float(out_b[i]), float(c[i, 5]), int(out_c[i])) for i in range(n)]

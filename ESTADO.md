@@ -159,13 +159,22 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
   `.../efr_logo2_bg_off.json` + `output/for_kfps/efr_v12_nospill.500.json`,
   check-OK. **Novo campeão.** Restam furos escuros no EFR + manchas no
   capacete → G6c.
-- **G6c — percepção (parcial):** quantização de paleta do alvo implementada
-  (`paletteColors`/`--palette-colors`, k-means só nos opacos) e **TESTADA e
-  REJEITADA**: K=8/16/24/32 deixam a imagem amarronzada e perdem a vivacidade
-  (RMSE vs original piora 0,2007→0,2019..0,2045 @100). Código fica opt-in,
-  default off, documentado. **Falta o UDF-lite por candidato** (peso no
-  contorno da própria elipse, estilo LIVE) — próxima sessão de build; é o
-  que ataca os furos escuros no EFR e as manchas no capacete do v12.
+- **G6c — percepção (feito, ambos opt-in/off):** (1) quantização de paleta
+  (`paletteColors`/`--palette-colors`, k-means só nos opacos) **rejeitada** —
+  K=8..32 amarronza e perde vivacidade. (2) **UDF-lite** implementado (peso no
+  contorno da própria elipse; `udfBoost`/`udfTau`; CPU+GPU com paridade em
+  `tests/test_g5.py`) + `areaNorm`; testado @100 (piora com boost) e @500
+  (udf1: 0.13162 vs v12 0.12989, visual empata/piora) → **default off**. (3)
+  `edgeBoost` estático segue default off. Conclusão: nesta imagem, loss
+  perceptual estático (paleta/UDF/edge) não paga; **v12 segue campeão**.
+- **B7 (bug) + G7a — contrato do `.exe` (feito 2026-10-04):** o `.exe` antigo
+  conta o fundo `type:1` como **uma camada** do template (modelo:
+  `efr_logo2_bg_off.500.json` = 500 entries = 1 bg + 499). Nosso export tinha
+  501 → import FH5 falha. Fix: `normalize_for_old_exe.py --exe-total N` corta
+  p/ N−1 desenháveis + bg; `--check --dest exe --expect N` agora valida entries
+  totais. Skills `forza-json-contracts`/`vinyl-deliverable-check` atualizadas
+  com a receita de 2 arquivos. Entregáveis v12: `for_kfps/efr_v12_nospill.500.json`
+  (500 reais) + `for_old_exe/efr_v12.exe500.json` (bg + 499).
 
 ## Provado in-game (FM8)
 

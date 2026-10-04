@@ -17,8 +17,10 @@ existe porque já causou uma ida perdida ao FM8/FH5 (ver `bugs.md` B1–B6).
 
 1. **Contrato do destino** — aplicar skill `forza-json-contracts`: fundo/int/contagem
    conforme `.exe` (FH5) ou KFPS (FM8). Arquivo errado para o destino = import falha.
-2. **Contagem exata** — nº de desenháveis == camadas do template no jogo.
-   Pós-processamento nunca pode mudar N (`src/post.py` garante por assert).
+2. **Contagem exata por destino** — `.exe`/FH5: **entries totais == camadas**
+   (fundo conta como camada → N−1 desenháveis, B7); KFPS/FM8: desenháveis == N.
+   Gerar os **dois** arquivos (ver `forza-json-contracts` → "Receita de entrega").
+   Pós-processamento nunca muda N (`src/post.py` garante por assert).
 3. **Render sem máscara** — gerar preview **sem** ignorar o transparente (fundo
    cinza-automotivo). Procurar lajes de tinta fora do desenho (sintoma do B1:
    elipses gigantes invadindo área transparente, invisíveis no preview mascarado).
@@ -35,6 +37,7 @@ existe porque já causou uma ida perdida ao FM8/FH5 (ver `bugs.md` B1–B6).
 ## Armadilhas
 
 - Preview mascarado bonito **não** aprova entrega — só o sem máscara aprova.
-- Nunca contar o `type:1` de fundo como shape do template na via KFPS.
+- Nunca contar o `type:1` de fundo como shape do template na via KFPS — mas no
+  `.exe` antigo o fundo **conta** como uma camada (contratos opostos; B7).
 - `output/` é ignorado no git: o entregável precisa ser copiado para fora ou
   regenerado — nunca presumir que "está na pasta".

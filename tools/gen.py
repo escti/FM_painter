@@ -46,6 +46,12 @@ def main():
                     help="Luma Prep G2/12 (0=off; off p/ arte sombreada)")
     ap.add_argument("--palette-colors", type=int, default=None,
                     help="Quantiza a paleta do alvo G6c (0=off; ex. 16/24/32)")
+    ap.add_argument("--udf-boost", type=float, default=None,
+                    help="UDF-lite G6c: reforco no contorno da elipse (0=off)")
+    ap.add_argument("--udf-tau", type=float, default=None,
+                    help="UDF-lite G6c: largura do reforco (default 0.25)")
+    ap.add_argument("--area-norm", type=float, default=None,
+                    help="G6c: normaliza delta por cnt^areaNorm (0=off)")
     ap.add_argument("--backend", default=None,
                     help="backend de scoring G5: cpu|opencl|auto (default cpu)")
     ap.add_argument("--preview", default="checkpoints", choices=["none", "checkpoints"],
@@ -88,6 +94,12 @@ def main():
         prof["lumaBands"] = args.luma_bands
     if args.palette_colors is not None:
         prof["paletteColors"] = args.palette_colors
+    if args.udf_boost is not None:
+        prof["udfBoost"] = args.udf_boost
+    if args.udf_tau is not None:
+        prof["udfTau"] = args.udf_tau
+    if args.area_norm is not None:
+        prof["areaNorm"] = args.area_norm
     if args.backend is not None:
         prof["backend"] = args.backend
 
@@ -143,7 +155,10 @@ def main():
                               opaque_only=opaque_only,
                               spill_w=float(prof.get("spillPenalty", 0.0)),
                               max_aspect=float(prof.get("maxAspect", 0.0)),
-                              edge_map=emap)
+                              edge_map=emap,
+                              udf_boost=float(prof.get("udfBoost", 0.0)),
+                              udf_tau=float(prof.get("udfTau", 0.25)),
+                              area_norm=float(prof.get("areaNorm", 0.0)))
         assert len(shapes) == n0, "pos nao pode mudar a contagem"
         # re-render final + re-score + re-salva checkpoints como prefixos
         from src.post import render_all
@@ -170,8 +185,10 @@ def main():
                   offset=expo)
 
     print(f"[ok] json em {outdir}/{stem}.json com {len(shapes)} shapes")
-    print(f"[ok] importe no FH5 arrastando o .json no forza-painter.exe antigo "
-          f"com template de {len(shapes)} esferas desagrupado")
+    print(f"[ok] entregaveis (B7): KFPS/FM8 -> tools/strip_bg.py "
+          f"({len(shapes)} desenhaveis); .exe/FH5 -> "
+          f"tools/normalize_for_old_exe.py --exe-total {len(shapes)} "
+          f"(fundo conta: {len(shapes)-1} desenhaveis + bg)")
 
 
 if __name__ == "__main__":

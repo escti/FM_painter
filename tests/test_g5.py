@@ -63,6 +63,23 @@ class TestGpuParity(unittest.TestCase):
         self.assertTrue((np.array([r[5] for r in rg]) ==
                          np.array([r[5] for r in rc])).all())
 
+    def test_score_parity_with_udf(self):
+        from src.opencl_backend import GpuScorer
+        from src.cpu_backend import score_parallel
+        target, current, mask, emap = _fixtures()
+        c = np.ascontiguousarray(current)
+        g = GpuScorer(target, c, mask, emap, 1000.0, udf_boost=3.0,
+                      udf_tau=0.25)
+        cands = _cands()
+        rg = g.score(cands)
+        rc = score_parallel(target, current, mask, cands, spill_w=1000.0,
+                            edge_map=emap, udf_boost=3.0, udf_tau=0.25)
+        dg = np.array([r[0] for r in rg])
+        dc = np.array([r[0] for r in rc])
+        self.assertEqual(int(np.argmin(dg)), int(np.argmin(dc)))
+        self.assertTrue(np.allclose(dg, dc, rtol=3e-3, atol=1.0),
+                        f"max dif {np.abs(dg - dc).max()}")
+
     def test_error_parity(self):
         from src.opencl_backend import GpuScorer
         from src.cpu_backend import full_error_nb

@@ -25,7 +25,10 @@ __kernel void score_batch(
     __global float *out_rgba,
     __global int   *out_cnt,
     const int W, const int H, const int n,
-    const float spill_w)
+    const float spill_w,
+    const float udf_boost,
+    const float udf_tau,
+    const float area_norm)
 {
     /* Um work-group por candidato: as threads cooperam sobre a bbox.
        Evita a divergencia SIMT de 1 work-item/candidato (bboxes de tamanhos
@@ -74,10 +77,15 @@ __kernel void score_batch(
                 float dx = (float)x - cx;
                 float lx = dx * ca + dy * sa;
                 float ly = -dx * sa + dy * ca;
-                if (lx * lx * inv_rx2 + ly * ly * inv_ry2 > 1.0f) continue;
+                float q = lx * lx * inv_rx2 + ly * ly * inv_ry2;
+                if (q > 1.0f) continue;
                 int idx = y * W + x;
                 if (mask[idx] == 0) { spill++; continue; }
                 float w = emap[idx];
+                if (udf_boost > 0.0f) {
+                    float t = (1.0f - q) / udf_tau;
+                    if (t < 1.0f) w *= (1.0f + udf_boost * (1.0f - t));
+                }
                 uchar4 tc = target[idx];
                 uchar4 cc = current[idx];
                 float tr = (float)tc.x, tg = (float)tc.y, tb = (float)tc.z;
@@ -132,10 +140,15 @@ __kernel void score_batch(
                 float dx = (float)x - cx;
                 float lx = dx * ca + dy * sa;
                 float ly = -dx * sa + dy * ca;
-                if (lx * lx * inv_rx2 + ly * ly * inv_ry2 > 1.0f) continue;
+                float q = lx * lx * inv_rx2 + ly * ly * inv_ry2;
+                if (q > 1.0f) continue;
                 int idx = y * W + x;
                 if (mask[idx] == 0) continue;
                 float w = emap[idx];
+                if (udf_boost > 0.0f) {
+                    float t = (1.0f - q) / udf_tau;
+                    if (t < 1.0f) w *= (1.0f + udf_boost * (1.0f - t));
+                }
                 uchar4 tc = target[idx];
                 uchar4 cc = current[idx];
                 float nar = a * br + om_a * (float)cc.x;
@@ -155,7 +168,10 @@ __kernel void score_batch(
         barrier(CLK_LOCAL_MEM_FENCE);
     }
     if (lid == 0) {
-        out_delta[g] = red[5][0] - errb_tot + spill_w * (float)spill_tot;
+        float dv = red[5][0] - errb_tot;
+        if (area_norm > 0.0f && cnt_tot > 0)
+            dv = dv / pow((float)cnt_tot, area_norm);
+        out_delta[g] = dv + spill_w * (float)spill_tot;
         out_rgba[g * 4 + 0] = br;
         out_rgba[g * 4 + 1] = bg;
         out_rgba[g * 4 + 2] = bb;
@@ -290,7 +306,8 @@ def _get_context():
 class GpuScorer:
     """Scoring/apply/erro residentes na GPU (mesma interface semantica do CPU)."""
 
-    def __init__(self, target, current, mask, emap, spill_w=0.0, local_size=128):
+    def __init__(self, target, current, mask, emap, spill_w=0.0, local_size=128,
+                 udf_boost=0.0, udf_tau=0.25, area_norm=0.0):
         import pyopencl as cl
         ctx, queue, program, _ = _get_context()
         self.cl = cl
@@ -299,6 +316,9 @@ class GpuScorer:
         self.program = program
         self.ls = int(local_size)
         self.spill_w = float(spill_w)
+        self.udf_boost = float(udf_boost)
+        self.udf_tau = float(udf_tau)
+        self.area_norm = float(area_norm)
         self.k_score = cl.Kernel(program, "score_batch")
         self.k_apply = cl.Kernel(program, "apply_ellipse")
         self.k_err = cl.Kernel(program, "error_stage1")
@@ -367,7 +387,8 @@ class GpuScorer:
             self.queue, (gsize,), (self.ls,),            self.d_target, self.d_current, self.d_mask, self.d_emap,
             self.d_cands, self.d_delta, self.d_rgba, self.d_cnt,
             np.int32(self.W), np.int32(self.H), np.int32(n),
-            np.float32(self.spill_w))
+            np.float32(self.spill_w), np.float32(self.udf_boost),
+            np.float32(self.udf_tau), np.float32(self.area_norm))
         delta = np.empty(n, dtype=np.float32)
         rgba = np.empty(n * 4, dtype=np.float32)
         cnt = np.empty(n, dtype=np.int32)

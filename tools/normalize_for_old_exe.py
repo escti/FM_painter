@@ -61,19 +61,24 @@ def validate(data, dest, expect=None):
     else:
         errs.append(f"destino desconhecido: {dest}")
     if expect is not None and dest == "exe":
-        vis = [s for s in shapes if s.get("type") != 1 and not s.get("hidden")]
-        n = len(vis)
-        # exe conta o fundo como entry: entries = N desenhaveis + 1
-        if n != expect:
-            errs.append(f"exe: desenhaveis={n} != template {expect}")
+        # B7: o .exe antigo conta o fundo (type:1) como UMA das camadas do
+        # template -> total de entries deve ser == camadas (bg + shapes).
+        if len(shapes) != expect:
+            errs.append(f"exe: entries={len(shapes)} != template {expect} "
+                        f"(fundo conta como camada)")
     return errs
 
 
-def normalize_to_exe(data, canvas=None):
-    """Injeta type:1 se ausente + arredonda tudo p/ int. Retorna (novo, notas)."""
+def normalize_to_exe(data, canvas=None, total=None):
+    """Injeta type:1 se ausente + arredonda p/ int. `total` = camadas do
+    template (entries totais, fundo incluido) -> corta desenhaveis p/ total-1."""
     notes = []
     shapes = [dict(s) for s in data["shapes"]]
     vis = [s for s in shapes if s.get("type") != 1 and not s.get("hidden")]
+    if total is not None and len(vis) > int(total) - 1:
+        notes.append(f"desenhaveis {len(vis)} -> {int(total) - 1} "
+                     f"(exe conta o fundo como camada; B7)")
+        vis = vis[:int(total) - 1]
     for s in vis:
         if "data" in s:
             s["data"] = [int(round(v)) for v in s["data"]]
@@ -107,6 +112,9 @@ def main():
     ap.add_argument("--expect", type=int, default=None,
                     help="N do template p/ validar contagem")
     ap.add_argument("--canvas", default=None, help="W,H (ex: 1024,1024)")
+    ap.add_argument("--exe-total", type=int, default=None,
+                    help="camadas do template p/ o .exe antigo (fundo conta); "
+                         "corta desenhaveis p/ total-1 (B7)")
     a = ap.parse_args()
 
     with open(a.input, encoding="utf-8") as f:
@@ -126,8 +134,8 @@ def main():
     cv = None
     if a.canvas:
         cv = tuple(int(x) for x in a.canvas.split(","))
-    out_data, notes = normalize_to_exe(data, cv)
-    errs = validate(out_data, "exe", a.expect)
+    out_data, notes = normalize_to_exe(data, cv, total=a.exe_total)
+    errs = validate(out_data, "exe", a.exe_total)
     dst = a.out or os.path.join(
         BASE, "output", "for_old_exe",
         os.path.splitext(os.path.basename(a.input))[0] + ".exe.json")

@@ -36,6 +36,9 @@ DEFAULTS = {
     "lumaBands": 0,
     "paletteColors": 0,
     "backend": "cpu",
+    "udfBoost": 0.0,
+    "udfTau": 0.25,
+    "areaNorm": 0.0,
 }
 
 INT_KEYS = {
@@ -48,7 +51,8 @@ INT_KEYS = {
 }
 
 FLOAT_KEYS = {"redundantTol", "spillPenalty", "maxAspect", "edgeBoost",
-              "lateSmallShare", "lateSmallStart"}
+              "lateSmallShare", "lateSmallStart", "udfBoost", "udfTau",
+              "areaNorm"}
 
 
 def load_profile(path):

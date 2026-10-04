@@ -45,3 +45,9 @@
 - Export com alpha semi-transparente (preview lavado + incompatível com o
   jogo, que é 100% opaco) → `opaque_only` travado; auditoria confirmou
   10.494/10.494 shapes opacos nos JSONs antigos.
+- **B7. Export `.exe` off-by-one (fundo conta como camada).** O `.exe` antigo
+  consome o `type:1` como uma das camadas do template (modelo do app:
+  `.500.json` = 500 entries = 1 bg + 499). Enviávamos 501 entries (bg + 500) →
+  import FH5 falha. Corrigido com `normalize_for_old_exe.py --exe-total N`
+  (corta p/ N−1 + bg) e `--check --dest exe --expect N` validando entries
+  totais. Skills `forza-json-contracts`/`vinyl-deliverable-check` atualizadas.

@@ -15,17 +15,24 @@ from .edgeweight import edge_weights
 class CpuScorer:
     """Adapter CPU (mesma interface do GpuScorer) sobre o backend numba."""
 
-    def __init__(self, target, current, mask, emap, spill_w):
+    def __init__(self, target, current, mask, emap, spill_w, udf_boost=0.0,
+                 udf_tau=0.25, area_norm=0.0):
         self.target = target
         self.current = current
         self.mask = mask
         self.emap = emap
         self.spill_w = spill_w
+        self.udf_boost = udf_boost
+        self.udf_tau = udf_tau
+        self.area_norm = area_norm
         self.H, self.W = mask.shape
 
     def score(self, cands):
         res = score_parallel(self.target, self.current, self.mask, cands,
-                             spill_w=self.spill_w, edge_map=self.emap)
+                             spill_w=self.spill_w, edge_map=self.emap,
+                             udf_boost=self.udf_boost,
+                             udf_tau=self.udf_tau,
+                             area_norm=self.area_norm)
         from .scoring import BatchScores
         if not len(res):
             e = np.empty(0)
@@ -49,11 +56,16 @@ class CpuScorer:
 def make_scorer(profile, target, current, mask, emap, spill_w, log=print):
     """Escolhe backend (G5): opencl/gpu/auto com fallback CPU."""
     backend = str(profile.get("backend", "cpu")).lower()
+    udf_boost = float(profile.get("udfBoost", 0.0))
+    udf_tau = float(profile.get("udfTau", 0.25))
+    area_norm = float(profile.get("areaNorm", 0.0))
     if backend in ("opencl", "gpu", "auto"):
         try:
             from .opencl_backend import GpuScorer, available, _get_context
             if available():
-                g = GpuScorer(target, current, mask, emap, spill_w)
+                g = GpuScorer(target, current, mask, emap, spill_w,
+                              udf_boost=udf_boost, udf_tau=udf_tau,
+                              area_norm=area_norm)
                 _, _, _, devname = _get_context()
                 log(f"[gen] backend=opencl device={devname}")
                 return g, True
@@ -61,7 +73,8 @@ def make_scorer(profile, target, current, mask, emap, spill_w, log=print):
                 log("[gen] aviso: OpenCL indisponivel; usando CPU")
         except Exception as e:
             log(f"[gen] aviso: OpenCL falhou ({e}); usando CPU")
-    return CpuScorer(target, current, mask, emap, spill_w), False
+    return CpuScorer(target, current, mask, emap, spill_w, udf_boost=udf_boost,
+                     udf_tau=udf_tau, area_norm=area_norm), False
 
 
 def resolve_workers(max_threads):
