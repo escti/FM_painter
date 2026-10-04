@@ -15,6 +15,15 @@ only resolve when the working directory is inside this worktree.
 - End of significant work: update `ESTADO.md` (date, results, decisions),
   then commit.
 
+## Tmp scratch (gitignored, pre-approved — no need to ask)
+
+- `tmp/` is the session scratch repo: freely read/write/delete without approval.
+  Already gitignored (see `.gitignore`); never commit, never store deliverables
+  there (`output/` holds artifacts, repo holds code). Never store secrets.
+- End of significant work (or when files go obsolete): delete what's obsolete;
+  keep `tmp/` empty/small. If a file must survive, move it to `output/` or the
+  repo with a real name instead of leaving it in `tmp/`.
+
 ## Boundaries (do not cross)
 
 - All code lives in `FM_Painter/`. Never write outside it.

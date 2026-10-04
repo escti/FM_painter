@@ -1,6 +1,6 @@
 # ESTADO — FM_Painter (handoff entre sessões)
 
-> Última atualização: 2026-10-01. Comece aqui + `melhorias.md` + `bugs.md`.
+> Última atualização: 2026-10-04. Comece aqui + `melhorias.md` + `bugs.md`.
 > Rode as sessões com cwd na raiz do repo (skills só carregam assim).
 
 ## Onde estamos
@@ -8,7 +8,12 @@
 Gerador CPU validado (v0.1.0 no ar em `escti/FM_painter`, branch `main`).
 Trilha GPU OpenCL provada viável (PyOpenCL + kernel teste OK na RX 9070 XT),
 não implementada. Import FM8 funciona via KFPS; `.exe` antigo só serve ao FH5.
-Plano agrupado salvo em `melhorias.md` (G1–G5, ordem G4→G1→G3→G2→G5).
+Plano agrupado salvo em `melhorias.md` (G1–G6, ordem G4→G1→G3→G2→G5→G6-A→G6-B).
+G6 (2026-10-04, só plano): item 15 Q-perceptual + UDF-lite (dono confirmou
+`antigo > KFPS > nosso` no olho com RMSE invertido; Q-offline primeiro) +
+item 16 reversa do `.exe` antigo (só geração, Nível 1 black-box + upstream
+geometrize/Primitive primeiro; dinâmica só guiada). Regra `tmp/` gitignored
+em `AGENTS.md` (rascunho pré-aprovado, limpar obsoleto no fim).
 G4 executado em 2026-10-01 sobre o nosso 500
 (`output/efr_logo2_bg_off_v4_3000/efr_logo2_bg_off.500.json`):
 sweep pós 0/1/2/3 + autopsia (só nosso) — ver seção G4 abaixo.
