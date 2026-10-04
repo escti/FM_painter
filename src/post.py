@@ -57,7 +57,8 @@ def prune_diagnostic(shapes, target, mask, bg, tol=0.0002, max_drift=0.005,
 
 def refine_pass(shapes, target, mask, bg, post_mutations=100, log=print, tag="",
                 opaque_only=True, top_k=3, spill_w=0.0, max_aspect=0.0,
-                edge_map=None, udf_boost=0.0, udf_tau=0.25, area_norm=0.0):
+                edge_map=None, udf_boost=0.0, udf_tau=0.25, area_norm=0.0,
+                quantize=True):
     """Coordinate-descent in-place com aceite GLOBAL (N preservado).
 
     Fix: a versao anterior aceitava pelo delta local (canvas sem o shape),
@@ -94,8 +95,17 @@ def refine_pass(shapes, target, mask, bg, post_mutations=100, log=print, tag="",
             m = muts[mi]
             if opaque_only:
                 ba = 255.0
-            cand = (float(m[0]), float(m[1]), float(m[2]), float(m[3]),
-                    float(m[4]), float(br), float(bgc), float(bb), float(ba))
+            if quantize:
+                cand = (float(int(round(m[0]))), float(int(round(m[1]))),
+                        float(max(1, int(round(m[2])))),
+                        float(max(1, int(round(m[3])))),
+                        float(int(round(m[4])) % 360),
+                        float(int(round(br))), float(int(round(bgc))),
+                        float(int(round(bb))), 255.0)
+            else:
+                cand = (float(m[0]), float(m[1]), float(m[2]), float(m[3]),
+                        float(m[4]), float(br), float(bgc), float(bb),
+                        float(ba))
             trial2 = trial_shapes[:idx] + [cand] + trial_shapes[idx:]
             tcur = render_all(trial2, W, H, mask, bg)
             e = float(full_error_nb(target, tcur, mask, W, H))
@@ -114,7 +124,7 @@ def refine_pass(shapes, target, mask, bg, post_mutations=100, log=print, tag="",
 def post_process(shapes, target, mask, bg, passes=1, post_mutations=100,
                  tol=0.0002, max_drift=0.005, opaque_only=True, log=print,
                  spill_w=0.0, max_aspect=0.0, edge_map=None, udf_boost=0.0,
-                 udf_tau=0.25, area_norm=0.0):
+                 udf_tau=0.25, area_norm=0.0, quantize=True):
     """passes=0 nada; >=1 diagnostico + (passes) refines. Nunca muda N."""
     if passes <= 0 or not shapes:
         return shapes
@@ -128,7 +138,7 @@ def post_process(shapes, target, mask, bg, passes=1, post_mutations=100,
                                 opaque_only=opaque_only, spill_w=spill_w,
                                 max_aspect=max_aspect, edge_map=edge_map,
                                 udf_boost=udf_boost, udf_tau=udf_tau,
-                                area_norm=area_norm)
+                                area_norm=area_norm, quantize=quantize)
     _, _ = prune_diagnostic(shapes, target, mask, bg, tol=tol,
                             max_drift=max_drift, log=log)
     assert len(shapes) == n0, "pos nunca pode mudar a contagem"

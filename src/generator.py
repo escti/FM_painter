@@ -110,6 +110,7 @@ def generate(target, current, mask, profile, out_dir, base_name,
     late_share = float(profile.get("lateSmallShare", 0.0))
     late_start = float(profile.get("lateSmallStart", 0.5))
     detail_max_r = int(profile.get("detailMaxR", 4))
+    quantize = bool(profile.get("quantize", 1))
     emap = edge_weights(target, float(profile.get("edgeBoost", 0.0)),
                          mask=mask)
     scorer, gpu = make_scorer(profile, target, current, mask, emap, spill_w,
@@ -181,6 +182,18 @@ def generate(target, current, mask, profile, out_dir, base_name,
 
         if best_d < 0 and cnt > 0:
             cx, cy, rx, ry, ang, alp = [float(x) for x in best]
+            if quantize:
+                # G7: alinha busca x entrega (o .exe grava ints). Sem isso o
+                # JSON entregue perde ~0,005 de RMSE vs o float otimizado.
+                cx = float(int(round(cx)))
+                cy = float(int(round(cy)))
+                rx = float(max(1, int(round(rx))))
+                ry = float(max(1, int(round(ry))))
+                ang = float(int(round(ang)) % 360)
+                br = float(int(round(br)))
+                bg = float(int(round(bg)))
+                bb = float(int(round(bb)))
+                ba = 255.0
             do_apply(cx, cy, rx, ry, ang, br, bg, bb, ba)
             shapes.append((cx, cy, rx, ry, ang, br, bg, bb, ba))
             err = scorer.error()

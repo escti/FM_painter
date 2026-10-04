@@ -174,7 +174,20 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
   p/ N−1 desenháveis + bg; `--check --dest exe --expect N` agora valida entries
   totais. Skills `forza-json-contracts`/`vinyl-deliverable-check` atualizadas
   com a receita de 2 arquivos. Entregáveis v12: `for_kfps/efr_v12_nospill.500.json`
-  (500 reais) + `for_old_exe/efr_v12.exe500.json` (bg + 499).
+  (500 reais) +   `for_old_exe/efr_v12.exe500.json` (bg + 499).
+- **G7b/G7c (feito 2026-10-04):** G7c — `postPasses` 1→2→3 sobre o v12:
+  0.13479→0.13114→0.12998→0.12955 (satura em ~2-3). **Achado grande:**
+  otimizávamos em float e gravávamos int → o JSON entregue perdia ~0,005
+  (in-memory 0.1299 vs entregue 0.1348). Fix `quantize` (arredonda o shape
+  aceito na geração **e** no `refine_pass`): busca == entrega. G7b — poda
+  real encontra só **2–3 obsoletos** no 500 → refill teria pouco a fazer;
+  documentado, não seguido.
+- **v14 (campeão, `output/efr_logo2_bg_off_v14_q2p/`):** v12 + `quantize` +
+  `postPasses=2`. Entregue RMSE **0.13164** (v12 entregue 0.13479; KFPS
+  0.13458; antigo 0.161) e spill 0,05%. Entregáveis: `for_kfps/efr_v14.500.json`
+  (500) + `for_old_exe/efr_v14.exe500.json` (bg+499), ambos check-OK.
+  Visualmente próximo do KFPS; sem barras cinzas/vazamento. Resta validar
+  in-game nos **dois** apps (KFPS e antigo) — B7 deve destravar o FH5 antigo.
 
 ## Provado in-game (FM8)
 

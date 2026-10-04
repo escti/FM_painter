@@ -110,8 +110,11 @@
     + EdgeRMSE + Spill% + LabMAE + Q). Fase B (spill) resolvida SEM código
     novo: `spillPenalty` alto basta (@100 w=200000→0,02%, w=1e6→0,00%).
     Full-500 v12 (`spillPenalty=1e6`) → spill 0,05% (era 11,7%). Paleta
-    (`paletteColors`, k-means só nos opacos) testada e **rejeitada** (K=8..32
-    amarronzа; RMSE pior). Resta UDF-lite + areaNorm.
+    (`paletteColors`, k-means só nos opacos) e UDF-lite (`udfBoost`) testados
+    e **rejeitados** p/ esta imagem (default off). B7/G7: `.exe` conta o fundo
+    como camada (`--exe-total`); `quantize` alinha busca×entrega (+~0,005 no
+    RMSE entregue); `postPasses=2`. **v14** entregue 0,13164 / spill 0,05%
+    (KFPS 0,13458). Poda só acha 2–3 obsoletos → G7b pouco a fazer.
 16. **Engenharia reversa do app antigo — só geração, Nível 1 primeiro
     (decidido 2026-10-04).**
     Base: `forza-painter.exe` (754 KB, 08/11/2023, Dear ImGui) é MIT derivado de

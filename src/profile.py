@@ -39,6 +39,7 @@ DEFAULTS = {
     "udfBoost": 0.0,
     "udfTau": 0.25,
     "areaNorm": 0.0,
+    "quantize": 1,
 }
 
 INT_KEYS = {
@@ -48,6 +49,7 @@ INT_KEYS = {
     "maxShapeRadiusDiv", "minShapeRadius", "mutationRounds",
     "postPasses", "postMutations", "fitInsideBbox", "fullCanvas",
     "detailMaxR", "adaptiveMut", "refineTopK", "lumaBands", "paletteColors",
+    "quantize",
 }
 
 FLOAT_KEYS = {"redundantTol", "spillPenalty", "maxAspect", "edgeBoost",

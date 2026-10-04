@@ -52,6 +52,8 @@ def main():
                     help="UDF-lite G6c: largura do reforco (default 0.25)")
     ap.add_argument("--area-norm", type=float, default=None,
                     help="G6c: normaliza delta por cnt^areaNorm (0=off)")
+    ap.add_argument("--no-quantize", action="store_true",
+                    help="G7: nao arredonda o shape aceito p/ int (default arredonda)")
     ap.add_argument("--backend", default=None,
                     help="backend de scoring G5: cpu|opencl|auto (default cpu)")
     ap.add_argument("--preview", default="checkpoints", choices=["none", "checkpoints"],
@@ -100,6 +102,8 @@ def main():
         prof["udfTau"] = args.udf_tau
     if args.area_norm is not None:
         prof["areaNorm"] = args.area_norm
+    if args.no_quantize:
+        prof["quantize"] = 0
     if args.backend is not None:
         prof["backend"] = args.backend
 
@@ -158,7 +162,8 @@ def main():
                               edge_map=emap,
                               udf_boost=float(prof.get("udfBoost", 0.0)),
                               udf_tau=float(prof.get("udfTau", 0.25)),
-                              area_norm=float(prof.get("areaNorm", 0.0)))
+                              area_norm=float(prof.get("areaNorm", 0.0)),
+                              quantize=bool(prof.get("quantize", 1)))
         assert len(shapes) == n0, "pos nao pode mudar a contagem"
         # re-render final + re-score + re-salva checkpoints como prefixos
         from src.post import render_all
