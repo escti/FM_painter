@@ -34,6 +34,7 @@ DEFAULTS = {
     "adaptiveMut": 0,
     "refineTopK": 0,
     "lumaBands": 0,
+    "paletteColors": 0,
     "backend": "cpu",
 }
 
@@ -43,7 +44,7 @@ INT_KEYS = {
     "stopAt", "redundantCheckEvery", "opaqueOnly", "alphaThreshold",
     "maxShapeRadiusDiv", "minShapeRadius", "mutationRounds",
     "postPasses", "postMutations", "fitInsideBbox", "fullCanvas",
-    "detailMaxR", "adaptiveMut", "refineTopK", "lumaBands",
+    "detailMaxR", "adaptiveMut", "refineTopK", "lumaBands", "paletteColors",
 }
 
 FLOAT_KEYS = {"redundantTol", "spillPenalty", "maxAspect", "edgeBoost",

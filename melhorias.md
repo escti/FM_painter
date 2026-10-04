@@ -106,6 +106,12 @@
       antigo vs v9/v11; 2) cria `score_q.py`; 3) roda Q e calibra pesos;
       4) implementa `udfBoost/areaNorm` CPU+GPU; 5) `@100` → full-500 →
       simpreview mask-off → `normalize_for_old_exe.py --check` → import.
+    Status 2026-10-04: Fase A feita (`tools/score_q.py`: RMSE_mask + SSIM_mask
+    + EdgeRMSE + Spill% + LabMAE + Q). Fase B (spill) resolvida SEM código
+    novo: `spillPenalty` alto basta (@100 w=200000→0,02%, w=1e6→0,00%).
+    Full-500 v12 (`spillPenalty=1e6`) → spill 0,05% (era 11,7%). Paleta
+    (`paletteColors`, k-means só nos opacos) testada e **rejeitada** (K=8..32
+    amarronzа; RMSE pior). Resta UDF-lite + areaNorm.
 16. **Engenharia reversa do app antigo — só geração, Nível 1 primeiro
     (decidido 2026-10-04).**
     Base: `forza-painter.exe` (754 KB, 08/11/2023, Dear ImGui) é MIT derivado de

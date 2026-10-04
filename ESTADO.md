@@ -143,6 +143,29 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
   enquanto o nosso MSE gasta erro em manchas de cor média (cinzas) em áreas
   texturizadas. Próximo passo focado: loss perceptual/estrutural (edge-aware
   correto, estilo UDF do LIVE) usando a GPU — o G3 estático não resolveu.
+- **G6a — métrica fiel (feito 2026-10-04):** `tools/score_q.py` (mesmo
+  rasterizador): RMSE_mask, SSIM_mask, EdgeRMSE (15% de maior Sobel no
+  interior), Spill% (mask-off), LabMAE + Q composto. Números 500:
+  antigo rmse=.161/ssim=.446/edge=.257/spill=0%; KFPS .135/.555/.238/.05%;
+  nosso v11 .133/.540/.223/**11,73%**. **Descoberta-chave:** em TODA métrica
+  de pixel o antigo é o PIOR; ele só empata em spill (0%). A percepção
+  `antigo>KFPS>nosso` não é reproduzível por pixel — o defeito objetivo é o
+  **spill** (o jogo vê; a métrica mascarada não via).
+- **G6b — spill ~0 (feito 2026-10-04, sem código novo):** basta subir
+  `spillPenalty`. @100: w=3000→3,96%, **w=200000→0,02%**, w=1e6→0,00%, com
+  RMSE praticamente igual. Full-500 v12 (`output/efr_logo2_bg_off_v12_nospill/`):
+  `spillPenalty=1e6`, 400k/2000/6/k32, 257s → **spill 0,05%** (era 11,7%),
+  RMSE 0,12989. Visualmente some as barras cinzas; EFR legível. Entregáveis:
+  `.../efr_logo2_bg_off.json` + `output/for_kfps/efr_v12_nospill.500.json`,
+  check-OK. **Novo campeão.** Restam furos escuros no EFR + manchas no
+  capacete → G6c.
+- **G6c — percepção (parcial):** quantização de paleta do alvo implementada
+  (`paletteColors`/`--palette-colors`, k-means só nos opacos) e **TESTADA e
+  REJEITADA**: K=8/16/24/32 deixam a imagem amarronzada e perdem a vivacidade
+  (RMSE vs original piora 0,2007→0,2019..0,2045 @100). Código fica opt-in,
+  default off, documentado. **Falta o UDF-lite por candidato** (peso no
+  contorno da própria elipse, estilo LIVE) — próxima sessão de build; é o
+  que ataca os furos escuros no EFR e as manchas no capacete do v12.
 
 ## Provado in-game (FM8)
 

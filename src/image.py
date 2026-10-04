@@ -8,7 +8,41 @@ import numpy as np
 from PIL import Image
 
 
-def load_target(path, max_resolution=1024, alpha_threshold=10, luma_bands=0):
+def _quantize_masked(target, mask, K, seed=0, iters=15, cap=200000):
+    """k-means (numpy) so nos pixels opacos; mapeia todos. Sem dithering."""
+    px = target[mask].astype(np.float32)
+    n = len(px)
+    if n == 0:
+        return target.copy()
+    rng = np.random.default_rng(seed)
+    sub = px if n <= cap else px[rng.choice(n, cap, replace=False)]
+    K = int(max(1, min(K, len(np.unique(sub, axis=0)))))
+    cent = sub[rng.choice(len(sub), K, replace=False)].copy()
+    for _ in range(int(iters)):
+        d = ((sub[:, None, :] - cent[None, :, :]) ** 2).sum(2)
+        lab = d.argmin(1)
+        new = cent.copy()
+        for k in range(K):
+            m = lab == k
+            if m.any():
+                new[k] = sub[m].mean(0)
+        if np.abs(new - cent).max() < 0.5:
+            cent = new
+            break
+        cent = new
+    out = target.copy()
+    lab = np.empty(n, dtype=np.int64)
+    step = 100000
+    for i in range(0, n, step):
+        chunk = px[i:i + step]
+        dd = ((chunk[:, None, :] - cent[None, :, :]) ** 2).sum(2)
+        lab[i:i + step] = dd.argmin(1)
+    out[mask] = np.clip(cent[lab], 0, 255).astype(np.uint8)
+    return out
+
+
+def load_target(path, max_resolution=1024, alpha_threshold=10, luma_bands=0,
+                palette_colors=0):
     im = Image.open(path).convert("RGBA")
     ow, oh = im.size
 
@@ -54,6 +88,13 @@ def load_target(path, max_resolution=1024, alpha_threshold=10, luma_bands=0):
         scale[nz] = band[nz] / lum[nz]
         target = np.clip(target.astype(np.float32) * scale[:, :, None],
                          0, 255).astype(np.uint8)
+        target[~mask] = 0
+
+    if palette_colors and palette_colors > 0:
+        # G6c: quantiza a paleta (k-means SO nos pixels opacos) p/ reduzir o
+        # "color mean error" (LIVE/CVPR22): regioes viram chapadas de cor real.
+        target[~mask] = 0
+        target = _quantize_masked(target, mask, int(palette_colors))
         target[~mask] = 0
 
     # cor inicial = media dos opacos (como geometrize faz com average)

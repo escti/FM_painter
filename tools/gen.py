@@ -44,6 +44,8 @@ def main():
                     help="two-stage top-K G2/2 (0=off, caminho original)")
     ap.add_argument("--luma-bands", type=int, default=None,
                     help="Luma Prep G2/12 (0=off; off p/ arte sombreada)")
+    ap.add_argument("--palette-colors", type=int, default=None,
+                    help="Quantiza a paleta do alvo G6c (0=off; ex. 16/24/32)")
     ap.add_argument("--backend", default=None,
                     help="backend de scoring G5: cpu|opencl|auto (default cpu)")
     ap.add_argument("--preview", default="checkpoints", choices=["none", "checkpoints"],
@@ -84,6 +86,8 @@ def main():
         prof["refineTopK"] = args.refine_top_k
     if args.luma_bands is not None:
         prof["lumaBands"] = args.luma_bands
+    if args.palette_colors is not None:
+        prof["paletteColors"] = args.palette_colors
     if args.backend is not None:
         prof["backend"] = args.backend
 
@@ -94,7 +98,8 @@ def main():
     target, current, mask, stats = load_target(
         img_path, max_resolution=prof["maxResolution"],
         alpha_threshold=prof["alphaThreshold"],
-        luma_bands=int(prof.get("lumaBands", 0)))
+        luma_bands=int(prof.get("lumaBands", 0)),
+        palette_colors=int(prof.get("paletteColors", 0)))
     print(f"[info] {img_path} -> work={stats['work_size']} "
           f"transparente={stats['pct_transparente']:.1f}% avg={stats['avg_color']}")
 
