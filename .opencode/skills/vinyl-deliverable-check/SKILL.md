@@ -17,9 +17,9 @@ existe porque já causou uma ida perdida ao FM8/FH5 (ver `bugs.md` B1–B6).
 
 1. **Contrato do destino** — aplicar skill `forza-json-contracts`: fundo/int/contagem
    conforme `.exe` (FH5) ou KFPS (FM8). Arquivo errado para o destino = import falha.
-2. **Contagem exata por destino** — `.exe`/FH5: **entries totais == camadas**
-   (fundo conta como camada → N−1 desenháveis, B7); KFPS/FM8: desenháveis == N.
-   Gerar os **dois** arquivos (ver `forza-json-contracts` → "Receita de entrega").
+2. **Contagem/format por destino** — app antigo/FH5 (trilha primária): **sem
+   fundo**, formato exato, N shapes (ver `forza-json-contracts`); KFPS/FM8:
+   desenháveis == N, sem fundo. Gerar os dois arquivos.
    Pós-processamento nunca muda N (`src/post.py` garante por assert).
 3. **Render sem máscara** — gerar preview **sem** ignorar o transparente (fundo
    cinza-automotivo). Procurar lajes de tinta fora do desenho (sintoma do B1:
@@ -37,7 +37,9 @@ existe porque já causou uma ida perdida ao FM8/FH5 (ver `bugs.md` B1–B6).
 ## Armadilhas
 
 - Preview mascarado bonito **não** aprova entrega — só o sem máscara aprova.
-- Nunca contar o `type:1` de fundo como shape do template na via KFPS — mas no
-  `.exe` antigo o fundo **conta** como uma camada (contratos opostos; B7).
+- Nunca incluir `type:1` no entregável: no KFPS conta como shape visível; no app
+  antigo é **desenhado como retângulo** (barra preta) e força o enquadramento do
+  canvas inteiro. Para bg_off, entregar **sem fundo** (B7).
+- Trilha preferida: **app antigo (FH5 → FM8)** — bordas melhores que o KFPS.
 - `output/` é ignorado no git: o entregável precisa ser copiado para fora ou
   regenerado — nunca presumir que "está na pasta".

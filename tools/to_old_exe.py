@@ -42,8 +42,10 @@ def main():
     ap.add_argument("--off", default="0,0", help="offset do crop x,y")
     ap.add_argument("--total", type=int, default=None,
                     help="camadas do template (entries totais; fundo conta)")
-    ap.add_argument("--bg", default="first", choices=["first", "last", "none"],
-                    help="posicao do fundo type:1 (testes de import)")
+    ap.add_argument("--bg", default="none",
+                    choices=["none", "first", "last"],
+                    help="fundo type:1: 'none' (padrao p/ bg_off; o app antigo "
+                         "desenha o fundo como retangulo), 'first'/'last' (teste)")
     a = ap.parse_args()
 
     ox, oy = (int(v) for v in a.off.split(","))

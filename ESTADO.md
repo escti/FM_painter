@@ -197,6 +197,14 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
   `tools/to_old_exe.py`. Entregável exato do v14:
   `output/for_old_exe/efr_v14.exact500.json` (500 entries = bg + 499, off +4).
   KFPS inalterado (`for_kfps/efr_v14.500.json`). Skill atualizada.
+- **G7d final (2026-10-05, confirmado in-game):** o app antigo **desenha o
+  `type:1` como retângulo preto** (alpha 0 ignorado) e enquadra o canvas → logo
+  pequeno + barra preta. Os arquivos dele escondem isso porque transbordam.
+  Entrega correta p/ bg_off = **sem fundo** (`to_old_exe.py --bg none`, padrão).
+  Entregável canônico do v14: `output/for_old_exe/efr_v14.nobg500.json`
+  (500 shapes, sem fundo). **Trilha primária de entrega = app antigo (FH5→FM8)**
+  (bordas melhores que o KFPS, decisão do dono); KFPS = alternativa.
+  Skills/`bugs.md` B7 atualizados; 39 testes OK.
 
 ## Provado in-game (FM8)
 

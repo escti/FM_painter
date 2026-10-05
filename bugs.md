@@ -45,9 +45,13 @@
 - Export com alpha semi-transparente (preview lavado + incompatível com o
   jogo, que é 100% opaco) → `opaque_only` travado; auditoria confirmou
   10.494/10.494 shapes opacos nos JSONs antigos.
-- **B7. Export `.exe` off-by-one (fundo conta como camada).** O `.exe` antigo
-  consome o `type:1` como uma das camadas do template (modelo do app:
-  `.500.json` = 500 entries = 1 bg + 499). Enviávamos 501 entries (bg + 500) →
-  import FH5 falha. Corrigido com `normalize_for_old_exe.py --exe-total N`
-  (corta p/ N−1 + bg) e `--check --dest exe --expect N` validando entries
-  totais. Skills `forza-json-contracts`/`vinyl-deliverable-check` atualizadas.
+- **B7. Import do `.exe` antigo (FH5): formato + fundo.** Duas causas
+  resolvidas. (1) O parser é sensível ao formato: `json.dump` com espaços/LF dava
+  "Malformed or invalid geometry file"; correção = serializador exato
+  (`src/oldexe.py`: CRLF, sem espaço após `data`/`color`, `score` 6 casas,
+  coords cheias) — validado por round-trip byte a byte (`tests/test_g7d.py`).
+  (2) O app **desenha o `type:1` como retângulo preto** de canvas cheio (alpha 0
+  ignorado) e força o preview a enquadrar o canvas (logo parece pequeno); nos
+  arquivos dele isso some porque os shapes transbordam e cobrem tudo. Correção:
+  entregar **sem fundo** (`tools/to_old_exe.py --bg none`, padrão). `.exe`/FH5
+  confirmado in-game 2026-10-05.
