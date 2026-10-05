@@ -43,19 +43,31 @@ Para um candidato `x.json`, conferir nesta ordem (parar no primeiro erro):
 
 - **KFPS/FM8:** `python tools/strip_bg.py <in.json> <out.json>` — remove fundo,
   arredonda para int, grava desenháveis em `output/for_kfps/`. Contagem = N reais.
-- **`.exe`/FH5:** `python tools/normalize_for_old_exe.py <in.json> --out <out.json>
-  --canvas W,H --exe-total N` — injeta `type:1` se ausente, arredonda p/ int e
-  **corta os desenháveis p/ N−1** (fundo conta; B7). Validar com
-  `--check --dest exe --expect N`.
+- **`.exe`/FH5:** `python tools/to_old_exe.py <in.json> --out <out.json>
+  --orig-w 1024 --orig-h 1024 --off 0,4 --total N` — escreve o formato **EXATO**
+  do app antigo (ver abaixo). Canonico; usa `src/oldexe.py`.
 - Direção KFPS→`.exe` (`finals/*.v2.json`, sem fundo): `normalize_for_old_exe.py`
   injeta o fundo + ints (`--exe-total` ajusta a contagem).
+
+### Formato EXATO do `.exe` (reverso-engenheirado)
+
+O parser do app antigo é sensível ao formato (nosso `json.dump` com espaços dava
+"Malformed or invalid geometry file"). Reproduzir byte a byte:
+- `{"shapes":` + **CRLF** + `[` … entradas separadas por `,` + CRLF … fim **CRLF** + `]}`
+- entrada: `{"type":T, "data":[i,..],"color":[i,..],"score":S}` — **sem espaço**
+  após `"data":`/`"color":`; com espaço só em `"type":N, `
+- `data`/`color` inteiros; `score` com **6 casas** (trim); bg `score:0`
+- fundo: `{"type":1, "data":[0,0,W-1,H-1], "color":[255,0,255,0], "score":0}`
+- shapes em **coordenadas cheias** (somar offset do crop)
+Verificado por round-trip byte a byte em `tests/test_g7d.py`.
 
 ## Receita de entrega (2 arquivos por run)
 
 Para um run de N camadas, entregar **sempre dois** arquivos:
 1. KFPS/FM8: `output/for_kfps/<nome>.N.json` (sem fundo, N desenháveis).
-2. `.exe`/FH5: `output/for_old_exe/<nome>.exeN.json` (fundo + N−1 desenháveis = N entries).
-Validar os dois com `normalize_for_old_exe.py --check` (KFPS e exe).
+2. `.exe`/FH5: `output/for_old_exe/<nome>.exactN.json` (formato exato, fundo +
+   N−1 desenháveis = N entries).
+Validar KFPS com `normalize_for_old_exe.py --check --dest kfps`.
 
 ## Armadilhas
 

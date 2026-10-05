@@ -188,6 +188,15 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
   (500) + `for_old_exe/efr_v14.exe500.json` (bg+499), ambos check-OK.
   Visualmente próximo do KFPS; sem barras cinzas/vazamento. Resta validar
   in-game nos **dois** apps (KFPS e antigo) — B7 deve destravar o FH5 antigo.
+- **G7d — serializador EXATO do app antigo (feito 2026-10-04):** o import no FH5
+  falhava com "Malformed or invalid geometry file" (parser sensível ao formato:
+  whitespace/CRLF/fundo/offset). Reverso-engenheirado byte a byte em
+  `src/oldexe.py` (CRLF, sem espaço após `data`/`color`, `score` 6 casas,
+  fundo `[0,0,W-1,H-1]`, coords cheias). `tests/test_g7d.py` faz **round-trip
+  byte a byte** contra o `.500.json` de referência (passa). Novo
+  `tools/to_old_exe.py`. Entregável exato do v14:
+  `output/for_old_exe/efr_v14.exact500.json` (500 entries = bg + 499, off +4).
+  KFPS inalterado (`for_kfps/efr_v14.500.json`). Skill atualizada.
 
 ## Provado in-game (FM8)
 
