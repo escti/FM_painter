@@ -106,15 +106,15 @@
       antigo vs v9/v11; 2) cria `score_q.py`; 3) roda Q e calibra pesos;
       4) implementa `udfBoost/areaNorm` CPU+GPU; 5) `@100` → full-500 →
       simpreview mask-off → `normalize_for_old_exe.py --check` → import.
-    Status 2026-10-04: Fase A feita (`tools/score_q.py`: RMSE_mask + SSIM_mask
-    + EdgeRMSE + Spill% + LabMAE + Q). Fase B (spill) resolvida SEM código
-    novo: `spillPenalty` alto basta (@100 w=200000→0,02%, w=1e6→0,00%).
-    Full-500 v12 (`spillPenalty=1e6`) → spill 0,05% (era 11,7%). Paleta
-    (`paletteColors`, k-means só nos opacos) e UDF-lite (`udfBoost`) testados
-    e **rejeitados** p/ esta imagem (default off). B7/G7: `.exe` conta o fundo
-    como camada (`--exe-total`); `quantize` alinha busca×entrega (+~0,005 no
-    RMSE entregue); `postPasses=2`. **v14** entregue 0,13164 / spill 0,05%
-    (KFPS 0,13458). Poda só acha 2–3 obsoletos → G7b pouco a fazer.
+    Status final 2026-10-05: Fase A ✅ (`tools/score_q.py`: RMSE_mask +
+    SSIM_mask + EdgeRMSE + Spill% + LabMAE + Q). Spill resolvido SEM código
+    novo (`spillPenalty`: @100 w=1e6→0,00%; full-500 v12 → spill 0,05%, era
+    11,7%). Paleta (`paletteColors`) e UDF-lite (`udfBoost`/`udfTau`/`areaNorm`,
+    CPU+GPU com paridade) **rejeitados** nesta imagem (default off). `quantize`
+    alinha busca×entrega (+~0,005 no RMSE entregue) e `postPasses=2`.
+    **Campeão v14** entregue 0,13164 / spill 0,05% (KFPS 0,13458; antigo 0,161).
+    Poda acha só 2–3 obsoletos (G7b pouco a fazer). Entrega (app antigo) **sem
+    fundo** — ver G7 no "Plano agrupado".
 16. **Engenharia reversa do app antigo — só geração, Nível 1 primeiro
     (decidido 2026-10-04).**
     Base: `forza-painter.exe` (754 KB, 08/11/2023, Dear ImGui) é MIT derivado de
@@ -133,6 +133,12 @@
     olho com RMSE invertido. Nível 2 (estática em cópia no temp opencode) e Nível 3
     (dinâmica guiada) só se o Nível 1 não fechar. Guardrails: `.exe`,
     `../imagens_originais/`, KFPS sempre read-only; atribuição MIT preservada.
+17. **Import do app antigo (FH5) rende bordas melhores que o KFPS com o MESMO
+    JSON (observado 2026-10-05).** O mesmo v14 importado pelo app antigo
+    (FH5 → transferido p/ FM8) tem bordas visivelmente melhores que via KFPS.
+    Hipóteses: ordem/estado da injeção no FH5, ou AA/quantização do importador.
+    Investigar (black-box + upstream geometrize/Primitive). Não bloqueia nada —
+    a **trilha primária de entrega já é o app antigo**. Sessão futura.
 
 ## Ideias registradas, não decididas
 
@@ -157,26 +163,32 @@
 - B3 scores dos checkpoints sobrescritos (cosmético).
 - B4 rejeição do JSON KFPS pelo `.exe` antigo → correção item 8.
 
-## Plano agrupado (2026-10-01, ordem de execução)
+## Plano agrupado (2026-10-01; status 2026-10-05)
 
-> Decidido com o dono em 2026-10-01. Não muda os itens acima, só agrupa
-> por correlação (mesmos arquivos/risco) e fixa a ordem para não esquecer.
+> Agrupa por correlação (mesmos arquivos/risco) e fixa a ordem; os itens acima
+> têm o detalhe. Nada aqui muda o fluxo antigo de `output/`.
 
-- **G1 — Entregável jogável**: 8 + 9 (contrato game-facing, B1/B2/B4).
-  Juntos economizam idas ao Forza; sem isso todo resto gera preview
-  bonito e laje de tinta in-game.
-- **G2 — Motor de candidatos**: 2 + 3 + 5 + 11 + 12 (um único sampler
-  parametrizado em `src/candidates.py`; fazer separado gera conflito).
-- **G3 — Função objetivo**: 4 + penalidade-spill do 9 (soma ponderada única
-  em `score_batch`; senão há dupla-contagem).
-- **G4 — Diagnóstico barato → alimenta 14**: 6 + 7 + 13 (só leitura/pós,
-  sem regenerar). Base fixada: `output/efr_logo2_bg_off_v4_3000/`
-  `efr_logo2_bg_off.500.json`. Autopsia escopo inicial: só o nosso JSON.
-- **G5 — Escala**: 1 + 10 + 14 (GPU OpenCL + 1536 + trilha A/B/C; GPU é o
-  acelerador do G2, 1536 muda coordenada de export).
-- **G6 — Qualidade perceptual**: 15 Fase A → Fase B (depende do Q calibrado;
-  não conflita com G1–G5 porque tudo novo é default off).
+- **G1 — Entregável jogável** ✅ (8+9): normalizador/`--check`, simpreview
+  mask-off, full-canvas opt-in, penalidade de spill. B1/B2 resolvidos.
+- **G2 — Motor de candidatos** ✅ (2+3+5+11+12): sampler parametrizado e
+  **vetorizado** (`candidates._sample_centers`); late-small, mutação adaptativa,
+  two-stage (`refineTopK`), teto de aspecto; luma opt-in.
+- **G3 — Função objetivo** ⏸️ (4): `edgeBoost` estático implementado mas
+  **estacionado** (default off) — loss perceptual não pagou (ver G6).
+- **G4 — Diagnóstico barato** ✅ (6+7+13): `tools/sweep_post.py`,
+  `tools/autopsy.py`.
+- **G5 — Escala/GPU** ✅ (1+10+14): backend OpenCL residente
+  (`src/opencl_backend.py`, `--backend opencl`, default cpu) + `src/scoring.py`
+  (`BatchScores`); 50k/shape ≈18ms (~34× CPU); full-500 @50k em 64s.
+- **G6 — Qualidade perceptual** ✅ (15): `tools/score_q.py` (métrica fiel);
+  spill a ~0; paleta e UDF-lite testados e **rejeitados** (opt-in off).
+- **G7 — Pós iterativo + entrega** ✅: B7 (formato **exato** do `.exe`,
+  `src/oldexe.py`, `tools/to_old_exe.py`), `quantize` (busca=entrega),
+  `postPasses=2`, **entrega sem fundo** no app antigo (ele desenha o `type:1`).
+  Poda+refill (13) dispensada (só 2–3 obsoletos no 500).
 
-**Ordem: G4 → G1 → G3 → G2 → G5 → G6-A (diagnóstico+Q-offline, barato) → G6-B (UDF-lite+area-norm, caro).** G4 e G1 destravam tudo com custo baixo;
-G3 antes do G2 porque muda o scoring que o sampler otimiza. G6-A antes de G6-B
-porque o Q calibrado é o critério de aceite do novo loop.
+**Ordem executada: G4 → G1 → G3(estac.) → G2 → G5 → G6-A → G6-B(rejeitado) →
+G7.** Campeão **v14** (entregue 0,13164 / spill 0,05%; KFPS 0,13458; antigo
+0,161). **Trilha primária de entrega: app antigo (FH5→FM8)**, KFPS alternativa.
+Próximo: item 16 (reversa do app antigo) e item 17 (bordas melhores no import
+do app antigo).

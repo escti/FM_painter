@@ -42,6 +42,11 @@ Reportar também: contagem real de desenháveis (arquivos antigos têm N−1, ex
 `.1000.json` com 999; KFPS pode podar o final, ex. 3000→2982) e distribuição
 de alphas.
 
+**Métrica fiel (multi-critério):** `tools/score_q.py` (RMSE_mask + SSIM_mask +
+EdgeRMSE + Spill% + LabMAE + Q). O RMSE mascarado sozinho **mente** — ele ignora
+o spill (tinta no transparente) que o jogo mostra, e o app antigo/KFPS empatam
+perto de 0% enquanto o nosso já chegou a 11,7%. Sempre olhar Spill% junto.
+
 ## Passo 3 — Artefatos
 
 Por comparação, salvar em `output/comparacao[_<tag>]/`:
@@ -52,6 +57,10 @@ Por comparação, salvar em `output/comparacao[_<tag>]/`:
 
 ## Armadilhas
 
+- **Medir o JSON ENTREGUE**, não o in-memory: o `.exe` grava ints e o RMSE do
+  arquivo difere do float otimizado (o `quantize` do gerador reduz esse gap).
+- Entrega bg_off: app antigo **sem fundo**; app antigo desenha `type:1` como
+  retângulo preto — ver skill `forza-json-contracts`.
 - Preview do app durante a geração ≠ render final (ex.: print do KFPS em 2315/3000).
 - `output/` é ignorado no git — comparações são descartáveis por design; para
   registrar um resultado, copiar `metricas.txt` + `lado_a_lado.png` para fora

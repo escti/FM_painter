@@ -32,19 +32,27 @@ only resolve when the working directory is inside this worktree.
 
 ## Commands (always run from `FM_Painter/`)
 
-- Tests: `python -m unittest discover -s tests -v`
-- Generate: `python tools/gen.py "<abs-image>" --profile profiles/bg_off_fast_beautiful.ini --stop-at 500`
-- 3-way compare (old/v2/KFPS): `python tools/compare3.py --n 500|1000|3000`
-- Render old-app JSON: `python tools/render_old.py --n 500`
-- Strip bg for KFPS import: `python tools/strip_bg.py <in.json> <out.json>`
-- Long runs are normal (1000 ≈ 6 min, 3000 ≈ 16 min + post) — set timeouts ≥30 min.
+- Tests: `python -m unittest discover -s tests -v` (39 testes, ~3s)
+- Generate (CPU): `python tools/gen.py "<abs-image>" --profile profiles/bg_off_fast_beautiful.ini --stop-at 500`
+- Generate (GPU): add `--backend opencl --random-samples 400000 --refine-top-k 32
+  --mutated-samples 2000 --mutation-rounds 6 --fit-inside --spill-penalty 1000000
+  --post-passes 2` (~4–5 min/500 na RX 9070 XT)
+- Entregáveis (2 arquivos): `python tools/to_old_exe.py <nosso.json> --out
+  output/for_old_exe/<nome>.nobg500.json --orig-w 1024 --orig-h 1024 --off 0,4
+  --total 500` (app antigo/FH5, SEM fundo = primário) e
+  `python tools/strip_bg.py <nosso.json> output/for_kfps/<nome>.500.json` (KFPS).
+- Avaliar métrica fiel (RMSE/SSIM/EdgeRMSE/Spill%/LabMAE+Q): `python tools/score_q.py`
+- Preview sem máscara (obrigatório no entregável): `python tools/simpreview.py <json>`
+- Diagnóstico: `python tools/sweep_post.py`, `python tools/autopsy.py`
+- 3-way compare: `python tools/compare3.py --n 500|1000|3000`
+- Long runs are normal (timeout ≥30 min). GPU @400k ≈ 4–5 min/500.
 - Shell is PowerShell 5.1: in `python -c`, use forward slashes in paths
   (backslash paths crash with `unicodeescape` SyntaxError).
 
-## Environment (verified 2026-09-28)
+## Environment (verified 2026-09-28 / 2026-10-05)
 
-- Python 3.14.4, Pillow 12.3, numpy 2.5.3, numba 0.67, pyopencl (AMD gfx1201 OK).
-- `requirements.txt` is **stale** (missing `pyopencl`) — check `pip list` before assuming deps.
+- Python 3.14.4, Pillow 12.3, numpy 2.5.3, numba 0.67, PyOpenCL 2026.1 (AMD RX 9070 XT / gfx1201).
+- `requirements.txt` inclui `pyopencl` (GPU é opt-in via `--backend opencl`).
 
 ## Numba rules (learned the hard way)
 
@@ -56,21 +64,29 @@ only resolve when the working directory is inside this worktree.
 
 ## JSON contracts (game-facing — breaking these breaks imports)
 
-- Old `.exe` (FH5) requires: leading `type:1` bg `[0,0,W,H]` + **integer** `data`/`color`
-  (floats → "Malformed or invalid geometry file").
-- KFPS counts the `type:1` bg as a visible shape (off-by-one: our 500 counts as 501) —
-  use `tools/strip_bg.py` output (`output/for_kfps/`) for the KFPS/FM8 path.
-- All shape alphas must be 255 (`opaque_only`); games are effectively opaque-only.
-- `score` field is cosmetic (post overwrites per-step scores with final err — see B3).
-- Delivered counts must be **exact** (500/1000/3000 = template layers). Post-processing
-  (`src/post.py`) must never change N: prune is diagnostic-only, refine needs global acceptance.
+Full detail: skill `forza-json-contracts` (atualizada in-game 2026-10-05).
+
+- **App antigo/FH5 (trilha primária):** entrega **SEM fundo** (`type:1`), formato
+  **exato** (CRLF; `{"type":T, "data":[i..],"color":[i..],"score":S}` sem espaço
+  após `data`/`color`; `score` 6 casas), `data`/`color` **inteiros**, coords no
+  canvas cheio (somar offset do crop). `bad json.dump` com espaços → "Malformed".
+  O app **desenha** o `type:1` como retângulo preto → nunca incluir p/ bg_off.
+  Gerar com `tools/to_old_exe.py` (`src/oldexe.py`).
+- **KFPS/FM8 (alternativa):** sem `type:1`; desenháveis == camadas do template
+  (`tools/strip_bg.py`).
+- Todos alpha 255 (`opaque_only`); `score` é cosmético (B3).
+- Contagem **exata** (N = camadas); o pós (`src/post.py`) nunca muda N.
+- `quantize` (default on) arredonda o shape aceito → busca == entrega (o `.exe`
+  grava ints; sem isso o JSON entregue perdia ~0,005).
 
 ## Mask semantics (source of B1 — read before touching scoring/render)
 
-- Transparent PNG pixels have weight 0 in scoring and are skipped by `apply_*`.
-- The game has **no mask**: oversized ellipses paint over "transparent" zones in-game
-  while previews hide the spill. Validate every deliverable with a mask-off render.
-- Export is currently in **cropped** working space (autocrop +1px, B2); target is full-canvas export.
+- Transparent PNG pixels têm peso 0 no scoring e são pulados por `apply_*`.
+- O jogo **não tem máscara**: shapes que invadem o transparente viram tinta
+  in-game. Por isso `spillPenalty` alto (ex. 1e6) e sempre validar com
+  `tools/simpreview.py` (mask-off, obrigatório no entregável).
+- O gerador trabalha no espaço **recortado**; a entrega aplica o offset do crop
+  (`to_old_exe --off`).
 
 ## Profiles
 

@@ -1,31 +1,29 @@
 # ESTADO — FM_Painter (handoff entre sessões)
 
-> Última atualização: 2026-10-04. Comece aqui + `melhorias.md` + `bugs.md`.
+> Última atualização: 2026-10-05. Comece aqui + `melhorias.md` + `bugs.md`.
 > Rode as sessões com cwd na raiz do repo (skills só carregam assim).
 
 ## Onde estamos
 
-Gerador CPU validado (v0.1.0 no ar em `escti/FM_painter`, branch `main`).
-Trilha GPU OpenCL provada viável (PyOpenCL + kernel teste OK na RX 9070 XT),
-não implementada. Import FM8 funciona via KFPS; `.exe` antigo só serve ao FH5.
-Plano agrupado salvo em `melhorias.md` (G1–G6, ordem G4→G1→G3→G2→G5→G6-A→G6-B).
-G6 (2026-10-04, só plano): item 15 Q-perceptual + UDF-lite (dono confirmou
-`antigo > KFPS > nosso` no olho com RMSE invertido; Q-offline primeiro) +
-item 16 reversa do `.exe` antigo (só geração, Nível 1 black-box + upstream
-geometrize/Primitive primeiro; dinâmica só guiada). Regra `tmp/` gitignored
-em `AGENTS.md` (rascunho pré-aprovado, limpar obsoleto no fim).
-G4 executado em 2026-10-01 sobre o nosso 500
-(`output/efr_logo2_bg_off_v4_3000/efr_logo2_bg_off.500.json`):
-sweep pós 0/1/2/3 + autopsia (só nosso) — ver seção G4 abaixo.
+Gerador **CPU + GPU OpenCL** (backend residente em `src/opencl_backend.py`;
+`--backend opencl`, default CPU) com fallback CPU. Plano agrupado G1–G7
+concluído (ver `melhorias.md`). **Campeão v14** (`output/efr_logo2_bg_off_v14_q2p/`):
+RMSE **entregue 0,13164** / spill 0,05% (KFPS 0,13458; app antigo 0,161).
+**Trilha primária de entrega = app antigo (FH5 → FM8)** — bordas melhores que o
+KFPS; KFPS é alternativa. Regra de entrega (B7): app antigo **sem fundo** +
+formato exato (`tools/to_old_exe.py`); KFPS sem fundo (`tools/strip_bg.py`).
+Pendências: item 16 (reversa do app antigo), item 17 (por que o import do app
+antigo rende bordas melhores), resolução 1536.
 
-## Resultados medidos (RMSE mascarado, mesmo rasterizador)
+## Resultados medidos (RMSE entregue, canvas nativo, mesmo rasterizador)
 
-| Shapes | App original | Nosso v2 | KFPS | Artefatos (gitignored) |
-|---|---|---|---|---|
-| 500 | 0.161 (499 reais) | 0.145 | 0.135 | `output/comparacao3_500/` |
-| 1000 | 0.138 (999) | 0.118 | 0.110 | `output/comparacao3_1000/` |
-| 3000 | 0.111 (2999) | **0.081** | 0.089 (podou p/ 2982) | `output/comparacao3_3000/` |
+| Shapes | App antigo | KFPS | Nosso v14 |
+|---|---|---|---|
+| 500 | 0.161 | 0.135 | **0.132** |
 
+Histórico (métrica mascarada, gerações CPU antigas): 500 → v2 0.145;
+1000 → v2 0.118 / KFPS 0.110; 3000 → v2 **0.081** / KFPS 0.089. A partir do v12,
+entregamos **sem fundo** e o RMSE passa a ser medido no JSON **entregue** (ints).
 Scores gravados nos JSONs usam escalas incompatíveis — nunca comparar diretamente.
 
 ## G4 executado (2026-10-01, base: nosso 500)
@@ -216,19 +214,22 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
 
 ## Decisões pendentes (dono: usuário)
 
-1. ~~**Fix do spill**~~ feito no G1 (penalidade + `fit-inside` + full-canvas opt-in
-   + simpreview). Backdrop cinza é só fundo, nunca shape. Falta: import de
-   validação no jogo (full-canvas + ausência de lajes).
-2. ~~**Normalizador KFPS→`.exe`**~~ feito no G1 (`--check` cobre exe|kfps).
-3. **Trilha**: (A) adotar KFPS / (B) continuar CPU / (C) híbrida.
-4. ~~**Go do backend GPU**~~ feito no G5 (`--backend opencl`, default cpu;
-   50k/shape em ~90ms; falta decidir orçamento oficial por run e teto de tempo).
+1. ~~**Fix do spill**~~ feito e **validado in-game** (v14 spill 0,05%).
+2. ~~**Normalizador KFPS→`.exe`**~~ feito (`--check` cobre exe|kfps).
+3. ~~**Trilha**~~ decidida: **app antigo (FH5 → FM8)** é a primária (bordas
+   melhores); KFPS é alternativa.
+4. ~~**Backend GPU**~~ feito no G5. Falta decidir **orçamento oficial por run**
+   e teto de tempo.
 5. **Resolução 1536** — estacionada (exige 1 import de validação).
+6. **Item 16** — engenharia reversa do app antigo (sessão futura).
+7. **Item 17** — por que o import do app antigo rende bordas melhores que o KFPS
+   com o mesmo JSON (sessão futura).
 
 ## Dependências externas (fora do repo)
 
 - PNGs fonte: `../imagens_originais/` (ex. `efr_logo2_bg_off.png` 1024², 21% transparente).
-- KFPS instalado fora do repo (geração GPU + import FM8); `.exe` antigo só FH5.
+- **App antigo** `forza-painter.exe` (FH5) — trilha primária de import.
+- KFPS instalado fora do repo (geração GPU + import FM8) — alternativa.
 - Templates no jogo: N esferas/círculos = N shapes, desagrupados.
 
 ## Retomar
@@ -236,9 +237,19 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
 ```
 cd D:\GitHub\FM_Painter
 pip install -r requirements.txt
-python -m unittest discover -s tests -v   # 6 testes, ~2s
-python tools/gen.py "<png>" --profile profiles/bg_off_fast_beautiful.ini --stop-at 500
+python -m unittest discover -s tests -v   # 39 testes, ~3s
+# GPU (default cpu; --backend opencl p/ usar a RX 9070 XT):
+python tools/gen.py "<png>" --profile profiles/bg_off_fast_beautiful.ini \
+  --stop-at 500 --backend opencl --random-samples 400000 --refine-top-k 32 \
+  --mutated-samples 2000 --mutation-rounds 6 --fit-inside --spill-penalty 1000000 \
+  --post-passes 2 --outdir output/<nome>_v15
+# Entregaveis (2 arquivos) — ver skill forza-json-contracts:
+python tools/to_old_exe.py output/<nome>_v15/<nome>.json \
+  --out output/for_old_exe/<nome>.nobg500.json --orig-w 1024 --orig-h 1024 \
+  --off 0,4 --total 500            # app antigo (FH5), SEM fundo = primario
+python tools/strip_bg.py output/<nome>_v15/<nome>.json \
+  output/for_kfps/<nome>.500.json  # KFPS/FM8 (alternativo)
 ```
 
-Runs longos: 1000 ≈ 6 min, 3000 ≈ 16 min + pós (timeout ≥30 min).
- Powershell 5.1: paths com `\` quebram `python -c` — usar `/`.
+Runs longos: 3000 ≈ 16 min + pós (timeout ≥30 min). GPU @400k ≈ 4-5 min/500.
+Powershell 5.1: paths com `\` quebram `python -c` — usar `/`.
