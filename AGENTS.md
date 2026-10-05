@@ -32,11 +32,13 @@ only resolve when the working directory is inside this worktree.
 
 ## Commands (always run from `FM_Painter/`)
 
-- Tests: `python -m unittest discover -s tests -v` (39 testes, ~3s)
+- Tests: `python -m unittest discover -s tests -v` (40 testes, ~3s)
 - Generate (CPU): `python tools/gen.py "<abs-image>" --profile profiles/bg_off_fast_beautiful.ini --stop-at 500`
-- Generate (GPU): add `--backend opencl --random-samples 400000 --refine-top-k 32
+- Generate (GPU, config de referência H0.1): `python tools/gen.py "<abs-image>"
+  --profile profiles/gpu_500.ini` (~4–5 min/500 na RX 9070 XT; **teto 10 min/500**).
+  Equivale a `--backend opencl --random-samples 400000 --refine-top-k 32
   --mutated-samples 2000 --mutation-rounds 6 --fit-inside --spill-penalty 1000000
-  --post-passes 2` (~4–5 min/500 na RX 9070 XT)
+  --post-passes 2`.
 - Entregáveis (2 arquivos): `python tools/to_old_exe.py <nosso.json> --out
   output/for_old_exe/<nome>.nobg500.json --orig-w 1024 --orig-h 1024 --off 0,4
   --total 500` (app antigo/FH5, SEM fundo = primário) e

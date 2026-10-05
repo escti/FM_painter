@@ -18,7 +18,7 @@ Gerador de vinis para Forza (FH5/FM8): converte imagens com fundo removido
 
 ```
 pip install -r requirements.txt
-python -m unittest discover -s tests -v   # 39 testes, ~3s
+python -m unittest discover -s tests -v   # 40 testes, ~3s
 ```
 
 Todos os comandos abaixo partem da raiz `FM_Painter/`.
@@ -29,11 +29,8 @@ Todos os comandos abaixo partem da raiz `FM_Painter/`.
 # Gerar (CPU): perfil default
 python tools/gen.py "../minha_logo_bg_off.png" --profile profiles/bg_off_fast_beautiful.ini --stop-at 500
 
-# Gerar (GPU, RX 9070 XT): ~4-5 min/500, busca ampliada
-python tools/gen.py "../minha_logo_bg_off.png" --profile profiles/bg_off_fast_beautiful.ini \
-  --stop-at 500 --backend opencl --random-samples 400000 --refine-top-k 32 \
-  --mutated-samples 2000 --mutation-rounds 6 --fit-inside --spill-penalty 1000000 \
-  --post-passes 2 --outdir output/minha_logo_v15
+# Gerar (GPU, RX 9070 XT): ~4-5 min/500, teto 10 min/500
+python tools/gen.py "../minha_logo_bg_off.png" --profile profiles/gpu_500.ini
 
 # Entregáveis (2 arquivos):
 # 1) app antigo / FH5 (primário): SEM fundo, formato exato
@@ -86,7 +83,7 @@ Detalhes e armadilhas (máscara, spill in-game, coords): `AGENTS.md` e skill
 
 - `ESTADO.md` — handoff (estado atual, resultados, decisões).
 - `AGENTS.md` — guia do desenvolvedor/agente (comandos, contratos, gotchas numba).
-- `melhorias.md` — backlog e plano agrupado (G1–G7).
+- `melhorias.md` — backlog + planos G1–G7 (executado) e H0–H4 (próximo).
 - `bugs.md` — bugs e registro dos corrigidos.
 
 Licença: MIT.

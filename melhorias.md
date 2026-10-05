@@ -1,6 +1,6 @@
 # Melhorias — FM_Painter
 
-> Última atualização: 2026-10-04. Itens aprovados/não implementados, ideias
+> Última atualização: 2026-10-05. Itens aprovados/não implementados, ideias
 > registradas e referências para `bugs.md`. Nada aqui altera o fluxo antigo
 > (`output/` existente); tudo novo entra em `FM_Painter/`.
 
@@ -190,5 +190,93 @@
 **Ordem executada: G4 → G1 → G3(estac.) → G2 → G5 → G6-A → G6-B(rejeitado) →
 G7.** Campeão **v14** (entregue 0,13164 / spill 0,05%; KFPS 0,13458; antigo
 0,161). **Trilha primária de entrega: app antigo (FH5→FM8)**, KFPS alternativa.
-Próximo: item 16 (reversa do app antigo) e item 17 (bordas melhores no import
-do app antigo).
+Próximo: plano **H0–H4** abaixo.
+
+## Plano H0–H4 — fidelidade visual primeiro (2026-10-05)
+
+> Ordem definida sobre o status G1–G7 (todos ✅, G3 pausado). Foco: fechar o gap
+> visual `antigo > KFPS > nosso` antes de escalar. Cada tarefa lista **arquivos**,
+> **comando** e **aceite**. H3 (escala) só depois de H2 fechar.
+
+### H0 — Destravar (curto; Grupo D)
+
+**Status 2026-10-05:** H0.1 ✅ (`profiles/gpu_500.ini`, teto 10 min/500);
+H0.2 ✅ (`tools/gen.py:save_final` + `tests/test_b3_scores.py`, 40 testes).
+
+- **H0.1 Orçamento oficial de GPU/run + teto de tempo** *(decisão, sem código).*
+  - Ação: congelar a config de referência (`--backend opencl --random-samples
+    400000 --refine-top-k 32 --mutated-samples 2000 --mutation-rounds 6
+    --fit-inside --spill-penalty 1000000 --post-passes 2`, ~4–5 min/500) e um teto
+    operacional (ex. 10 min/500); registrar em `AGENTS.md`/`ESTADO.md` e, se útil,
+    num `profiles/gpu_500.ini`.
+  - **Aceite:** um único comando reproduz o campeão v14; tempo documentado.
+- **H0.2 B3 — preservar `scores` por etapa** *(implementar + teste).*
+  - Causa: `tools/gen.py:173` sobrescreve com `scores = [err] * len(shapes)`.
+  - Ação: guardar a lista de scores de geração antes do pós e gravar
+    `scores[:cp]` nos checkpoints e no final (o `score` é cosmético — B3).
+  - **Arquivos:** `tools/gen.py`; **teste novo** `tests/test_b3_scores.py`.
+  - **Aceite:** `.500` tem scores por shape (não todos iguais ao erro final);
+    39 testes + o novo verdes.
+
+### H1 — Pesquisa: por que o app antigo ganha (Grupo A: itens 16 + 17)
+
+Read-only, sem risco; produz a evidência que calibra H2.
+
+- **H1.1 Inventário read-only.** Listar `.json` antigos (`../imagens_originais/`)
+  + `settings/*.ini` do `forza-painter.exe`; resumo em
+  `output/reverse_n1/inventario.txt` (N, tipos, contagens, chaves de perfil).
+- **H1.2 Autópsia comparada.** `python tools/autopsy.py --json <antigo.500.json>`
+  vs v6/v9/v11 → área/aspecto/ângulo/ordem/paleta/alpha em
+  `output/reverse_n1/autopsy_*.txt`.
+- **H1.3 Métrica fiel.** `python tools/compare3.py --n 500` +
+  `python tools/simpreview.py <antigo.500.json>` → RMSE/EdgeRMSE/Spill% em
+  `output/reverse_n1/metricas.txt`. Testar hipóteses do **item 17** (ordem/estado
+  da injeção no FH5, AA/quantização do importador).
+- **H1.4 Mapear o upstream.** Localizar `geometrize-lib`/`Primitive` (referência
+  externa) e mapear scoring/mutate/faixas de `primitive/main.go` + runner.
+- **H1.5 Entregável.** `output/reverse_n1/tabela.md` (`antigo-faz-X /
+  nós-fazemos-Y / ação`) com ações concretas para H2.
+- **Aceite:** explica `antigo > KFPS > nosso` no olho apesar do RMSE invertido;
+  lista o que ajustar no objetivo (H2.1). Se o Nível 1 não fechar, H2.1 avança
+  com as hipóteses do `score_q` sem esperar.
+
+### H2 — Criar/implementar fidelidade visual (Grupo B)
+
+- **H2.1 Item 4 — UDF real por candidato** *(núcleo).*
+  - Diagnóstico: `udfBoost/udfTau/areaNorm` já existem (`src/cpu_backend.py:71-75`),
+    mas o `areaNorm` parece **inerte** e o UDF atual reforça só o contorno da
+    própria elipse. Trocar por: `rho2=(lx/rx)^2+(ly/ry)^2`, `rho=sqrt(rho2)`,
+    `w_udf = 1 + udfBoost*exp(-((1-rho)/udfTau)^2)`; cor ponderada por `w_udf`;
+    `delta_norm = delta / max(cnt,1)**areaNorm` (tira viés pró-gigante).
+  - **Arquivos:** `src/cpu_backend.py` (`_score_one`), `src/opencl_backend.py`
+    (kernel `score_batch`), `src/post.py` (`refine_pass`), `src/profile.py`,
+    `tools/gen.py` (flags já existem); `tests/test_g5.py` (paridade).
+  - **Gate:** sweep `@100` `udfBoost∈{0,1,2,4} × areaNorm∈{0,0.5,1}` → full-500
+    campeão → `python tools/score_q.py` (Q ↓) **e** `python tools/simpreview.py`
+    (mask-off): EFR legível, sem barra cinza.
+  - **Aceite:** paridade CPU×GPU <1e-4; full-500 bate v14 em Q e no olho.
+- **H2.2 Item 11 — perfil detalhe-fino.** Expor `detailMaxR`
+  (`--detail-max-r`) e aplicar últimos N shapes só raio 1–4px nos tiles de texto
+  (`src/candidates.py` já aceita `detail_max_r`).
+  - **Aceite:** `@100` melhora EdgeRMSE do texto sem piorar Spill%.
+- **H2.3 Item 12 — luma bands.** Testar `--luma-bands B`, `B∈{4,8,16}`
+  (implementado em `src/image.py:77-91`); provavelmente **off** para EFR
+  sombreado. **Aceite:** decisão documentada.
+
+### H3 — Escala (Grupo C; adiado até H2 fechar)
+
+- **H3.1 Item 13 — poda por importância.** Substituir `prune_diagnostic` O(N²)
+  por poda estilo KFPS; só importa no 3000. **Aceite:** poda no 3000 sem perder Q.
+- **H3.2 Item 10 — resolução 1536** + reescala no export (`src/image.py`,
+  `tools/to_old_exe.py`). **Agrupar com ida ao jogo** (o import de validação do
+  mapeamento de coords é o gargalo). **Aceite:** 1 import valida as coords.
+
+### H4 — Fechar
+
+- Validar in-game os campeões (2 entregáveis: app antigo sem fundo + KFPS),
+  atualizar `ESTADO.md`/`CHANGELOG.md`/docs e commit.
+
+**Ordem:** H0 → H1 → H2 → (H3) → H4.
+**Racional:** H0 destrava runs longos; H1 é pesquisa barata que diz *onde* o UDF
+deve pesar (bordas/texto, não manchas médias — erro do G3 estático); H2 é o ganho
+real de fidelidade; H3 multiplica só com qualidade estável.

@@ -8,6 +8,11 @@ Versionamento Semântico: `vX.0.0` (módulo novo), `v0.X.0` (funcionalidade),
 
 ## [Unreleased]
 
+### Fixed
+
+- **B3** — checkpoints/final do pós preservam o `score` por etapa
+  (`tools/gen.py:save_final`) em vez do erro final único; `tests/test_b3_scores.py`.
+
 ## [0.2.0] - 2026-10-05
 
 Backend GPU (OpenCL), spill in-game resolvido, entrega sem fundo no app antigo

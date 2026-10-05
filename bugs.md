@@ -6,9 +6,6 @@
 
 ## Abertos
 
-- **B3. Scores dos checkpoints sobrescritos (cosmético).** Após o pós, os
-  `.500`/`.1000.json` carregam o erro final em todos os shapes, não o erro
-  da etapa. Não afeta o jogo (só métrica).
 - **B5. KFPS conta `type:1` como shape visível (off-by-one 501).**
   Comportamento externo (`transfer_bridge.py:133-138` conta todo dict sem
   `hidden`). Contornado com `output/for_kfps/` (sem fundo, contagem
@@ -40,6 +37,9 @@
 - **B4. `.exe` antigo rejeita JSON do KFPS ("Malformed").** Corrigido: o parser
   exige o **formato exato** (sem espaços, CRLF, `score` 6 casas) e ints;
   normalizador + `src/oldexe.py` (ver B7).
+- **B3. Scores dos checkpoints sobrescritos (cosmético).** Corrigido no H0.2
+  (2026-10-05): `tools/gen.py:save_final` preserva o `score` por etapa (erro em
+  que o shape foi aceito) em vez de `[err_final] * N`; teste `test_b3_scores.py`.
 - **B7. Import do `.exe` antigo (FH5): formato + fundo.** Duas causas
   resolvidas. (1) O parser é sensível ao formato: `json.dump` com espaços/LF dava
   "Malformed or invalid geometry file"; correção = serializador exato

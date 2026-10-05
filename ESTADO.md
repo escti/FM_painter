@@ -134,13 +134,18 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
   Comparação justa (mesmo renderizador, canvas nativo 1024²):
   **KFPS 500v2 = 0,13458** vs nosso v11 = **0,13271** → numericamente
   **passamos o KFPS**. Luma (12) confirmado pior no original (trapaça no
-  alvo posterizado). Entregáveis v11: `.../efr_logo2_bg_off.json` +
+  alvo posterizado).   Entregáveis v11: `.../efr_logo2_bg_off.json` +
   `output/for_kfps/efr_v11_400k.500.json`, check-OK.
+- **H0.1 — orçamento oficial GPU congelado (2026-10-05):** `profiles/gpu_500.ini`
+  (`backend=opencl`, 400k/2000/6/k32, fit-inside, spill 1e6, pos 2) — ~4–5 min/500,
+  **teto 10 min/500**. Config de referência = campeão v14.
 - GAP PERCEPTUAL restante (dono decide): mesmo com RMSE melhor, o KFPS
   *parece* mais limpo porque concentra erro nas bordas/texto (EFR nítido),
   enquanto o nosso MSE gasta erro em manchas de cor média (cinzas) em áreas
   texturizadas. Próximo passo focado: loss perceptual/estrutural (edge-aware
   correto, estilo UDF do LIVE) usando a GPU — o G3 estático não resolveu.
+  Plano executável **H0–H4** em `melhorias.md`: H0 destrava (GPU/B3), H1 pesquisa
+  o app antigo (16+17), H2 implementa o UDF real/detalhe-fino.
 - **G6a — métrica fiel (feito 2026-10-04):** `tools/score_q.py` (mesmo
   rasterizador): RMSE_mask, SSIM_mask, EdgeRMSE (15% de maior Sobel no
   interior), Spill% (mask-off), LabMAE + Q composto. Números 500:
@@ -202,7 +207,7 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
   Entregável canônico do v14: `output/for_old_exe/efr_v14.nobg500.json`
   (500 shapes, sem fundo). **Trilha primária de entrega = app antigo (FH5→FM8)**
   (bordas melhores que o KFPS, decisão do dono); KFPS = alternativa.
-  Skills/`bugs.md` B7 atualizados; 39 testes OK.
+  Skills/`bugs.md` B7 atualizados; 40 testes OK (H0.2 inclui `test_b3_scores`).
 
 ## Provado in-game (FM8)
 
@@ -218,8 +223,8 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
 2. ~~**Normalizador KFPS→`.exe`**~~ feito (`--check` cobre exe|kfps).
 3. ~~**Trilha**~~ decidida: **app antigo (FH5 → FM8)** é a primária (bordas
    melhores); KFPS é alternativa.
-4. ~~**Backend GPU**~~ feito no G5. Falta decidir **orçamento oficial por run**
-   e teto de tempo.
+4. ~~**Backend GPU**~~ feito no G5; **orçamento oficial/teto** fixados no H0.1
+   (`profiles/gpu_500.ini`, teto 10 min/500).
 5. **Resolução 1536** — estacionada (exige 1 import de validação).
 6. **Item 16** — engenharia reversa do app antigo (sessão futura).
 7. **Item 17** — por que o import do app antigo rende bordas melhores que o KFPS
@@ -237,7 +242,7 @@ nunca shape). Núcleo: `spillPenalty` (default 0.0/off) em `_score_one` +
 ```
 cd D:\GitHub\FM_Painter
 pip install -r requirements.txt
-python -m unittest discover -s tests -v   # 39 testes, ~3s
+python -m unittest discover -s tests -v   # 40 testes, ~3s
 # GPU (default cpu; --backend opencl p/ usar a RX 9070 XT):
 python tools/gen.py "<png>" --profile profiles/bg_off_fast_beautiful.ini \
   --stop-at 500 --backend opencl --random-samples 400000 --refine-top-k 32 \

@@ -14,6 +14,21 @@ from src.cpu_backend import full_error_nb
 from src.version import __version__
 
 
+def save_final(outdir, stem, W, H, shapes, gen_scores, save_at, offset,
+               final_err=None):
+    """Re-salva checkpoints + final preservando o score POR ETAPA (fix B3).
+
+    O `score` de cada shape e cosmetico: mantemos o erro da etapa em que o
+    shape foi aceito (nao o erro final do pos). `final_err` so alimenta o log.
+    """
+    for cp in sorted(set(save_at)):
+        if cp <= len(shapes):
+            dump_json(outdir, stem, W, H, shapes[:cp], gen_scores[:cp],
+                      suffix=f".{cp}", offset=offset)
+    return dump_json(outdir, stem, W, H, shapes, gen_scores, suffix="",
+                     offset=offset)
+
+
 def main():
     ap = argparse.ArgumentParser(description="FM_Painter - rapido e bonito (bg_off)")
     ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -143,6 +158,7 @@ def main():
         print(f"[export] full-canvas {ow}x{oh} offset={x0},{y0} (opt-in B2)")
 
     # pos-processamento configuravel (N sempre preservado p/ template)
+    gen_scores = list(scores)  # B3: score por etapa, nao sobrescrever no pos
     if prof["postPasses"] > 0:
         import numpy as np
         from src.edgeweight import edge_weights
@@ -170,24 +186,16 @@ def main():
         cur = render_all(shapes, W, H, mask, bg)
         current[:, :] = cur
         err = float(full_error_nb(target, current, mask, W, H))
-        scores = [err] * len(shapes)
-        for cp in sorted(set(prof["saveAt"])):
-            if cp <= len(shapes):
-                dump_json(outdir, stem, expW, expH, shapes[:cp], scores[:cp],
-                          suffix=f".{cp}", offset=expo)
-        dump_json(outdir, stem, expW, expH, shapes, scores, suffix="",
-                  offset=expo)
+        # B3: checkpoints/final mantem o score por etapa (nao o erro final)
+        save_final(outdir, stem, expW, expH, shapes, gen_scores,
+                   prof["saveAt"], expo, final_err=err)
         preview_cb("final", current)
         print(f"[post] {n0} -> {len(shapes)} shapes err={err:.5f} "
               f"passes={prof['postPasses']} (contagem preservada)")
     elif full_canvas:
         # sem pos mas com full-canvas: re-salva deslocado (N preservado)
-        for cp in sorted(set(prof["saveAt"])):
-            if cp <= len(shapes):
-                dump_json(outdir, stem, expW, expH, shapes[:cp], scores[:cp],
-                          suffix=f".{cp}", offset=expo)
-        dump_json(outdir, stem, expW, expH, shapes, scores, suffix="",
-                  offset=expo)
+        save_final(outdir, stem, expW, expH, shapes, gen_scores,
+                   prof["saveAt"], expo)
 
     print(f"[ok] json em {outdir}/{stem}.json com {len(shapes)} shapes")
     print(f"[ok] entregaveis (B7): KFPS/FM8 -> tools/strip_bg.py "
