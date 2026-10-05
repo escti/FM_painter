@@ -36,10 +36,16 @@ JOBS = {
     "kfps": ("D:/users/thiag/downloads/forza/KFPS-3.1.91/KloudysFH6Painter"
              "/imgs/generated/efr_logo2_bg_off-c924ecde9267/finals"
              "/efr_logo2_bg_off.500v2.json", (0, 0)),
+    "nosso_v6": (os.path.join(BASE, "output", "efr_logo2_bg_off_v6_fit_w3000",
+                              "efr_logo2_bg_off.500.json"), (0, 4)),
+    "nosso_v9": (os.path.join(BASE, "output", "efr_logo2_bg_off_v9_g2",
+                              "efr_logo2_bg_off.500.json"), (0, 4)),
     "nosso_v11": (os.path.join(BASE, "output", "efr_logo2_bg_off_v11_400k",
                                "efr_logo2_bg_off.json"), (0, 4)),
     "nosso_v12": (os.path.join(BASE, "output", "efr_logo2_bg_off_v12_nospill",
                                "efr_logo2_bg_off.json"), (0, 4)),
+    "nosso_v14": (os.path.join(BASE, "output", "efr_logo2_bg_off_v14_q2p",
+                               "efr_logo2_bg_off.500.json"), (0, 4)),
 }
 
 

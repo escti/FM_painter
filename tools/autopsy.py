@@ -56,17 +56,34 @@ def main():
     ap.add_argument("--image", default=DEFAULT_PNG)
     ap.add_argument("--step", type=int, default=25)
     ap.add_argument("--tile", type=int, default=128)
+    ap.add_argument("--out", default=OUTDIR,
+                    help="diretorio de saida (0/None usa o default)")
+    ap.add_argument("--expect", type=int, default=500,
+                    help="contagem esperada (0 = nao exigir)")
+    ap.add_argument("--full", action="store_true",
+                    help="JSON em coords full-canvas (antigo): NAO recorta")
     a = ap.parse_args()
 
     shapes = load_shapes(a.json)
     n = len(shapes)
     print(f"[autopsy] {a.json} shapes={n}")
-    assert n == 500, f"esperava 500, achei {n}"
+    if a.expect:
+        assert n == a.expect, f"esperava {a.expect}, achei {n}"
 
-    target, _, mask, stats = load_target(
-        a.image, max_resolution=1024, alpha_threshold=10)
-    H, W = mask.shape
-    bg = np.array(stats["avg_color"], dtype=np.uint8)
+    if a.full:
+        from PIL import Image
+        arr = np.array(Image.open(a.image).convert("RGBA"))
+        H, W = arr.shape[:2]
+        mask = arr[:, :, 3] > 10
+        target = arr[:, :, :3].copy()
+        target[~mask] = 0
+        stats = {"crop": (0, 0, W, H), "work_size": (W, H)}
+        bg = np.array(target[mask].mean(axis=0).astype(np.uint8))
+    else:
+        target, _, mask, stats = load_target(
+            a.image, max_resolution=1024, alpha_threshold=10)
+        H, W = mask.shape
+        bg = np.array(stats["avg_color"], dtype=np.uint8)
 
     arr = np.asarray(shapes, dtype=np.float64)
     cx, cy, rx, ry, ang = arr[:, 0], arr[:, 1], arr[:, 2], arr[:, 3], arr[:, 4]
@@ -135,15 +152,15 @@ def main():
     for i, x, y, rxa, rya, ar in giants:
         L.append(f"  {i}: ({x:.0f},{y:.0f}) {rxa:.0f}x{rya:.0f} area={ar:.0f}")
 
-    os.makedirs(OUTDIR, exist_ok=True)
-    with open(os.path.join(OUTDIR, "resumo.txt"), "w", encoding="utf-8") as f:
+    os.makedirs(a.out, exist_ok=True)
+    with open(os.path.join(a.out, "resumo.txt"), "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")
-    with open(os.path.join(OUTDIR, "curva.csv"), "w", encoding="utf-8") as f:
+    with open(os.path.join(a.out, "curva.csv"), "w", encoding="utf-8") as f:
         f.write("k,rmse\n")
         for k, e in curve:
             f.write(f"{k},{e:.6f}\n")
     print("\n".join(L))
-    print(f"[ok] {OUTDIR}/resumo.txt + curva.csv")
+    print(f"[ok] {a.out}/resumo.txt + curva.csv")
 
 
 if __name__ == "__main__":

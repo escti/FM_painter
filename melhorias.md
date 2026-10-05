@@ -222,6 +222,16 @@ H0.2 ✅ (`tools/gen.py:save_final` + `tests/test_b3_scores.py`, 40 testes).
 
 Read-only, sem risco; produz a evidência que calibra H2.
 
+**Status 2026-10-05: ✅ (Nível 1 fechou).** Entregável `output/reverse_n1/tabela.md`
+(gitignored). Achado-chave: o antigo é **pior em toda métrica de pixel** (Q
+ordena `v14 < kfps < antigo`), mas ganha no olho por ser **estrutural** — pinta
+**poucas elipses enormes e sobrepostas primeiro** (`%área 1º5 = 33%`, max 441k,
+área total 2,1× a nossa), enquanto nós pintamos muitas pequenas e o
+`spillPenalty=1e6` (fix do B1) encolheu o max de 141k→41k. Upstream: exe é MIT
+derivado de geometrize-lib + Primitive. **Ação para H2:** rampa de `spillPenalty`
+(baixo no começo, alto no fim) + viés big-first. Detalhe em
+`output/reverse_n1/tabela.md`. Item 17 (import FH5 vs KFPS) segue black-box in-game.
+
 - **H1.1 Inventário read-only.** Listar `.json` antigos (`../imagens_originais/`)
   + `settings/*.ini` do `forza-painter.exe`; resumo em
   `output/reverse_n1/inventario.txt` (N, tipos, contagens, chaves de perfil).
@@ -255,6 +265,11 @@ Read-only, sem risco; produz a evidência que calibra H2.
     campeão → `python tools/score_q.py` (Q ↓) **e** `python tools/simpreview.py`
     (mask-off): EFR legível, sem barra cinza.
   - **Aceite:** paridade CPU×GPU <1e-4; full-500 bate v14 em Q e no olho.
+- **H2.1b — schedule big-first (do H1).** Rampa de `spillPenalty`
+  (`spill_eff = spill · f(t)`, baixo nos primeiros ~15–25% do run) + viés de raio
+  grande nos primeiros K shapes (espelho do late-small). Alvo: `%área 1º5` rumo
+  aos ~33% do antigo e área total ~2× (hoje ~metade), sem reintroduzir spill no
+  entregável. Logar `área total` e `%área 1º5` no run.
 - **H2.2 Item 11 — perfil detalhe-fino.** Expor `detailMaxR`
   (`--detail-max-r`) e aplicar últimos N shapes só raio 1–4px nos tiles de texto
   (`src/candidates.py` já aceita `detail_max_r`).

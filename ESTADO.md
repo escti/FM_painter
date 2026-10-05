@@ -12,8 +12,12 @@ RMSE **entregue 0,13164** / spill 0,05% (KFPS 0,13458; app antigo 0,161).
 **Trilha primária de entrega = app antigo (FH5 → FM8)** — bordas melhores que o
 KFPS; KFPS é alternativa. Regra de entrega (B7): app antigo **sem fundo** +
 formato exato (`tools/to_old_exe.py`); KFPS sem fundo (`tools/strip_bg.py`).
-Pendências: item 16 (reversa do app antigo), item 17 (por que o import do app
-antigo rende bordas melhores), resolução 1536.
+Plano **H0–H4** (ver `melhorias.md`): H0 ✅ (fix B3 + `profiles/gpu_500.ini`);
+**H1 ✅** (reversa Nível 1: o antigo ganha no olho por ser **estrutural** — põe
+poucas elipses enormes primeiro; `%área 1º5=33%`, max 441k, área 2,1× a nossa;
+o `spillPenalty` do B1 encolheu nosso max 141k→41k). Entregável:
+`output/reverse_n1/tabela.md`. Próximo: **H2** (UDF real + rampa de spill big-first).
+Pendências antigas: item 17 (import FH5 vs KFPS, in-game), resolução 1536.
 
 ## Resultados medidos (RMSE entregue, canvas nativo, mesmo rasterizador)
 
