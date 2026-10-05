@@ -42,6 +42,8 @@ def main():
     ap.add_argument("--off", default="0,0", help="offset do crop x,y")
     ap.add_argument("--total", type=int, default=None,
                     help="camadas do template (entries totais; fundo conta)")
+    ap.add_argument("--bg", default="first", choices=["first", "last", "none"],
+                    help="posicao do fundo type:1 (testes de import)")
     a = ap.parse_args()
 
     ox, oy = (int(v) for v in a.off.split(","))
@@ -50,11 +52,16 @@ def main():
         BASE, "output", "for_old_exe",
         os.path.splitext(os.path.basename(a.input))[0] + ".exact.json")
     write_old_exe(out, shapes, a.orig_w, a.orig_h, off=(ox, oy),
-                  total=a.total, scores=scores)
-    n = len(shapes) if a.total is None else min(len(shapes), a.total - 1)
+                  total=a.total, scores=scores, bg=a.bg)
+    if a.bg == "none":
+        n = len(shapes) if a.total is None else min(len(shapes), a.total)
+        extra = "sem fundo"
+    else:
+        n = len(shapes) if a.total is None else min(len(shapes), a.total - 1)
+        extra = f"1 bg ({a.bg})"
     print(f"[ok] {a.input} -> {out}")
-    print(f"[ok] entries={1 + n} (1 bg + {n} shapes, fundo conta como camada) "
-          f"orig={a.orig_w}x{a.orig_h} off=({ox},{oy})")
+    print(f"[ok] entries={n + (0 if a.bg == 'none' else 1)} "
+          f"({extra} + {n} shapes) orig={a.orig_w}x{a.orig_h} off=({ox},{oy})")
 
 
 if __name__ == "__main__":

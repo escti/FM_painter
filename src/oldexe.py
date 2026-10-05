@@ -40,12 +40,20 @@ def serialize_entries(entries, nl=NL):
     return '{"shapes":' + nl + '[' + ("," + nl).join(parts) + nl + ']}'
 
 
-def shapes_to_entries(shapes, W, H, off=(0, 0), total=None, scores=None):
+def shapes_to_entries(shapes, W, H, off=(0, 0), total=None, scores=None,
+                      bg="first"):
     """shapes: (cx,cy,rx,ry,ang,r,g,b,a). W,H = imagem ORIGINAL (fundo = W-1,H-1).
-    total: camadas do template (entries totais, fundo conta) -> corta p/ total-1."""
+    total: camadas do template (entries totais; fundo conta, se houver).
+    bg: 'first' (padrao), 'last' ou 'none' (testes de import do app antigo)."""
     ox, oy = off
-    entries = [(1, [0, 0, int(W) - 1, int(H) - 1], list(BG_COLOR), 0)]
-    limit = (int(total) - 1) if total is not None else len(shapes)
+    bg_entry = (1, [0, 0, int(W) - 1, int(H) - 1], list(BG_COLOR), 0)
+    if bg == "none":
+        limit = (int(total)) if total is not None else len(shapes)
+    else:
+        limit = (int(total) - 1) if total is not None else len(shapes)
+    entries = []
+    if bg == "first":
+        entries.append(bg_entry)
     for i, s in enumerate(shapes[:max(0, limit)]):
         cx, cy, rx, ry, ang, r, g, b, a = s
         data = [int(round(cx + ox)), int(round(cy + oy)),
@@ -54,12 +62,15 @@ def shapes_to_entries(shapes, W, H, off=(0, 0), total=None, scores=None):
         color = [int(round(r)), int(round(g)), int(round(b)), 255]
         sc = scores[i] if (scores and i < len(scores)) else 0
         entries.append((16, data, color, sc))
+    if bg == "last":
+        entries.append(bg_entry)
     return entries
 
 
-def write_old_exe(path, shapes, W, H, off=(0, 0), total=None, scores=None):
+def write_old_exe(path, shapes, W, H, off=(0, 0), total=None, scores=None,
+                  bg="first"):
     text = serialize_entries(shapes_to_entries(shapes, W, H, off, total,
-                                                scores))
+                                                scores, bg))
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="") as f:
         f.write(text)
