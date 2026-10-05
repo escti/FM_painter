@@ -46,6 +46,8 @@ JOBS = {
                                "efr_logo2_bg_off.json"), (0, 4)),
     "nosso_v14": (os.path.join(BASE, "output", "efr_logo2_bg_off_v14_q2p",
                                "efr_logo2_bg_off.500.json"), (0, 4)),
+    "nosso_v15": (os.path.join(BASE, "output", "efr_logo2_bg_off_v15_bf",
+                               "efr_logo2_bg_off.json"), (0, 4)),
 }
 
 

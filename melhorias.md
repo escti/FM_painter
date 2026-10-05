@@ -270,6 +270,15 @@ derivado de geometrize-lib + Primitive. **Ação para H2:** rampa de `spillPenal
   grande nos primeiros K shapes (espelho do late-small). Alvo: `%área 1º5` rumo
   aos ~33% do antigo e área total ~2× (hoje ~metade), sem reintroduzir spill no
   entregável. Logar `área total` e `%área 1º5` no run.
+  **Status 2026-10-05: ✅ parcial (viés grande implementado).** Flag
+  `bigFirstFrac` (`--big-first-frac`, default 0); piso de raio `min(W,H)//8` na
+  fase inicial. **v15** (`output/efr_logo2_bg_off_v15_bf/`, `0.15`): maxArea
+  13k→**62.5k**, `%área 1º5` 6,1%→**16,7%**, área total 364k→**637k** (antigo
+  782k), spill 0,03%, RMSE entregue 0,13463 (v14 0,13164; KFPS 0,13458) —
+  **praticamente empatado com o KFPS**. @100: maxArea 15k→79k, `%1º5` 13→39%.
+  Falta: rampa de spill (não foi necessária — spill 0,03%) e **validação do dono**
+  (olho + import). **H2.1 (UDF real) fica condicional a essa validação** — o H1
+  mostrou que métrica de pixel não captura o ganho; não empurrar UDF às cegas.
 - **H2.2 Item 11 — perfil detalhe-fino.** Expor `detailMaxR`
   (`--detail-max-r`) e aplicar últimos N shapes só raio 1–4px nos tiles de texto
   (`src/candidates.py` já aceita `detail_max_r`).

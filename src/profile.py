@@ -30,6 +30,7 @@ DEFAULTS = {
     "edgeBoost": 0.0,
     "lateSmallShare": 0.0,
     "lateSmallStart": 0.5,
+    "bigFirstFrac": 0.0,
     "detailMaxR": 4,
     "adaptiveMut": 0,
     "refineTopK": 0,
@@ -53,8 +54,8 @@ INT_KEYS = {
 }
 
 FLOAT_KEYS = {"redundantTol", "spillPenalty", "maxAspect", "edgeBoost",
-              "lateSmallShare", "lateSmallStart", "udfBoost", "udfTau",
-              "areaNorm"}
+              "lateSmallShare", "lateSmallStart", "bigFirstFrac", "udfBoost",
+              "udfTau", "areaNorm"}
 
 
 def load_profile(path):

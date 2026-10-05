@@ -16,14 +16,21 @@ Plano **H0–H4** (ver `melhorias.md`): H0 ✅ (fix B3 + `profiles/gpu_500.ini`)
 **H1 ✅** (reversa Nível 1: o antigo ganha no olho por ser **estrutural** — põe
 poucas elipses enormes primeiro; `%área 1º5=33%`, max 441k, área 2,1× a nossa;
 o `spillPenalty` do B1 encolheu nosso max 141k→41k). Entregável:
-`output/reverse_n1/tabela.md`. Próximo: **H2** (UDF real + rampa de spill big-first).
+`output/reverse_n1/tabela.md`.
+**H2.1b ✅ parcial:** flag `bigFirstFrac` (`--big-first-frac`, piso de raio
+`min(W,H)//8` na fase inicial, espelho do coarse-to-fine do antigo). **v15**
+(`output/efr_logo2_bg_off_v15_bf/`, `0.15`): maxArea 13k→62k, `%área 1º5`
+6,1%→16,7%, área total 364k→637k (antigo 782k), spill 0,03%, RMSE entregue
+**0,13463** (≈KFPS 0,13458; v14 0,13164). Entregáveis v15 em `for_old_exe`/
+`for_kfps`, check-OK. **Falta validação do dono (olho + in-game)** — H2.1 (UDF)
+fica condicional a ela. Próximo: validar v15.
 Pendências antigas: item 17 (import FH5 vs KFPS, in-game), resolução 1536.
 
 ## Resultados medidos (RMSE entregue, canvas nativo, mesmo rasterizador)
 
-| Shapes | App antigo | KFPS | Nosso v14 |
-|---|---|---|---|
-| 500 | 0.161 | 0.135 | **0.132** |
+| Shapes | App antigo | KFPS | Nosso v14 | Nosso v15 (big-first) |
+|---|---|---|---|---|
+| 500 | 0.161 | 0.135 | **0.132** | 0.135 |
 
 Histórico (métrica mascarada, gerações CPU antigas): 500 → v2 0.145;
 1000 → v2 0.118 / KFPS 0.110; 3000 → v2 **0.081** / KFPS 0.089. A partir do v12,

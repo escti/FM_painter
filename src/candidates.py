@@ -98,10 +98,15 @@ def _sample_centers(n, rng, x0, y0, x1, y1, W, H, mask, tiles, guided):
 def random_candidates(n, W, H, mask, min_r=2, max_r_div=4, rng=None,
                       target=None, current=None, progress=0.5, guided=0.7,
                       opaque_only=True, fit_inside=False, max_aspect=0.0,
-                      late_share=0.0, late_start=0.5, detail_max_r=4):
+                      late_share=0.0, late_start=0.5, detail_max_r=4,
+                      big_first_frac=0.0):
     rng = rng or np.random.default_rng()
     x0, y0, x1, y1 = opaque_bbox(mask)
     lo, hi = radius_for_progress(progress, W, H, min_r)
+    # H2.1b: fase base (big-first) — piso de raio alto p/ criar washes grandes
+    # (espelha o app antigo: %area 1os5 ~33%); so nos primeiros big_first_frac.
+    if big_first_frac > 0.0 and progress < big_first_frac:
+        lo = max(lo, min(W, H) // 8)
     # respeita max_r_div do profile como teto adicional
     hi = min(hi, max(4, min(W, H) // max_r_div)) if max_r_div else hi
     hi = max(hi, lo + 1)

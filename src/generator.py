@@ -109,6 +109,7 @@ def generate(target, current, mask, profile, out_dir, base_name,
     refine_top_k = int(profile.get("refineTopK", 0))
     late_share = float(profile.get("lateSmallShare", 0.0))
     late_start = float(profile.get("lateSmallStart", 0.5))
+    big_first_frac = float(profile.get("bigFirstFrac", 0.0))
     detail_max_r = int(profile.get("detailMaxR", 4))
     quantize = bool(profile.get("quantize", 1))
     emap = edge_weights(target, float(profile.get("edgeBoost", 0.0)),
@@ -139,7 +140,8 @@ def generate(target, current, mask, profile, out_dir, base_name,
             target=target, current=current, progress=progress,
             opaque_only=opaque_only, fit_inside=fit_inside,
             max_aspect=max_aspect, late_share=late_share,
-            late_start=late_start, detail_max_r=detail_max_r)
+            late_start=late_start, detail_max_r=detail_max_r,
+            big_first_frac=big_first_frac)
         res = scorer.score(cands)
         bi = res.argmin()
         best_d, br, bg, bb, ba, cnt = res.get(bi)

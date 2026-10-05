@@ -8,6 +8,16 @@ Versionamento Semântico: `vX.0.0` (módulo novo), `v0.X.0` (funcionalidade),
 
 ## [Unreleased]
 
+### Added
+
+- **H2.1b — schedule big-first:** flag `bigFirstFrac` (`--big-first-frac`;
+  profile `bigFirstFrac`). Piso de raio `min(W,H)//8` na fase inicial, criando
+  base washes grandes (currículo de tamanho). v15 reduz o gap estrutural vs o
+  app antigo (maxArea 13k→62k, área total 364k→637k) com spill 0,03% e RMSE
+  ~KFPS. Teste `tests/test_h2.py`.
+- `tools/normalize_for_old_exe.py`: destino `--dest exe-nobg` (valida a trilha
+  primária **sem fundo** do B7).
+
 ### Fixed
 
 - **B3** — checkpoints/final do pós preservam o `score` por etapa

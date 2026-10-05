@@ -18,7 +18,7 @@ Gerador de vinis para Forza (FH5/FM8): converte imagens com fundo removido
 
 ```
 pip install -r requirements.txt
-python -m unittest discover -s tests -v   # 40 testes, ~3s
+python -m unittest discover -s tests -v   # 42 testes, ~3s
 ```
 
 Todos os comandos abaixo partem da raiz `FM_Painter/`.

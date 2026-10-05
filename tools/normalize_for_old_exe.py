@@ -58,6 +58,23 @@ def validate(data, dest, expect=None):
         vis = [s for s in shapes if s.get("type") != 1 and not s.get("hidden")]
         if expect is not None and len(vis) != expect:
             errs.append(f"kfps: desenhaveis={len(vis)} != template {expect}")
+    elif dest in ("exe-nobg", "exe_nobg"):
+        # B7: trilha primaria entrega SEM fundo (o app antigo desenha type:1)
+        for i, s in enumerate(shapes):
+            if s.get("type") != 16:
+                errs.append(f"exe-nobg: shapes[{i}] type != 16")
+                break
+            if not _is_int_list(s.get("data", [])):
+                errs.append(f"exe-nobg: shapes[{i}] data com floats")
+                break
+            if not _is_int_list(s.get("color", [])):
+                errs.append(f"exe-nobg: shapes[{i}] color com floats")
+                break
+            if len(s.get("color", [])) == 4 and s["color"][3] != 255:
+                errs.append(f"exe-nobg: shapes[{i}] alpha != 255")
+                break
+        if expect is not None and len(shapes) != expect:
+            errs.append(f"exe-nobg: desenhaveis={len(shapes)} != template {expect}")
     else:
         errs.append(f"destino desconhecido: {dest}")
     if expect is not None and dest == "exe":
@@ -108,7 +125,8 @@ def main():
     ap.add_argument("input")
     ap.add_argument("--out", default=None)
     ap.add_argument("--check", action="store_true")
-    ap.add_argument("--dest", default="exe", choices=["exe", "kfps"])
+    ap.add_argument("--dest", default="exe",
+                    choices=["exe", "exe-nobg", "kfps"])
     ap.add_argument("--expect", type=int, default=None,
                     help="N do template p/ validar contagem")
     ap.add_argument("--canvas", default=None, help="W,H (ex: 1024,1024)")

@@ -53,6 +53,8 @@ def main():
                     help="peso de borda G3 (default do perfil, 0=off)")
     ap.add_argument("--late-small-share", type=float, default=None,
                     help="fração pequena na 2a metade G2/3+11 (0=off)")
+    ap.add_argument("--big-first-frac", type=float, default=None,
+                    help="H2.1b: fração inicial com raio grande (washes; 0=off)")
     ap.add_argument("--adaptive-mut", action="store_true",
                     help="mutação adaptativa G2/5 (default off)")
     ap.add_argument("--refine-top-k", type=int, default=None,
@@ -103,6 +105,8 @@ def main():
         prof["edgeBoost"] = args.edge_boost
     if args.late_small_share is not None:
         prof["lateSmallShare"] = args.late_small_share
+    if args.big_first_frac is not None:
+        prof["bigFirstFrac"] = args.big_first_frac
     if args.adaptive_mut:
         prof["adaptiveMut"] = 1
     if args.refine_top_k is not None:

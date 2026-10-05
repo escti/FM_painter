@@ -32,7 +32,7 @@ only resolve when the working directory is inside this worktree.
 
 ## Commands (always run from `FM_Painter/`)
 
-- Tests: `python -m unittest discover -s tests -v` (40 testes, ~3s)
+- Tests: `python -m unittest discover -s tests -v` (42 testes, ~3s)
 - Generate (CPU): `python tools/gen.py "<abs-image>" --profile profiles/bg_off_fast_beautiful.ini --stop-at 500`
 - Generate (GPU, config de referência H0.1): `python tools/gen.py "<abs-image>"
   --profile profiles/gpu_500.ini` (~4–5 min/500 na RX 9070 XT; **teto 10 min/500**).
